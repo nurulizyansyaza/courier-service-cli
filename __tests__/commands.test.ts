@@ -24,7 +24,7 @@ describe('runCost (Problem 1)', () => {
 
   it('handles no valid offers', () => {
     runCost(['50 1', 'ITEM1 10 20 NA']);
-    expect(output).toEqual(['ITEM1 0 300']);
+    expect(output).toEqual(['ITEM1 0 250']);
   });
 
   it('throws on invalid header', () => {
