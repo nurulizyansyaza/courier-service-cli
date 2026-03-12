@@ -11,6 +11,7 @@ function parseHeader(line: string): [number, number] {
 }
 
 export function runCost(lines: string[]): void {
+  if (lines.length === 0) throw new Error('Empty input: expected header line "baseCost count"');
   const [baseCost, count] = parseHeader(lines[0]);
   const packages = parsePackages(baseCost, count, lines.slice(1, 1 + count));
 
@@ -20,6 +21,7 @@ export function runCost(lines: string[]): void {
 }
 
 export function runDelivery(lines: string[]): void {
+  if (lines.length === 0) throw new Error('Empty input: expected header line "baseCost count"');
   const [baseCost, count] = parseHeader(lines[0]);
   const packages = parsePackages(baseCost, count, lines.slice(1, 1 + count));
   const fleet = parseFleet(lines[1 + count]);

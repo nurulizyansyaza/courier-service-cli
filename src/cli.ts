@@ -23,4 +23,4 @@ program
     runDelivery(lines);
   });
 
-program.parse();
+void program.parseAsync();
