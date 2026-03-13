@@ -11,8 +11,13 @@
     "build": "tsc",
     "test": "jest",
     "start:cost": "ts-node src/cli.ts cost",
-    "start:delivery": "ts-node src/cli.ts delivery"
+    "start:delivery": "ts-node src/cli.ts delivery",
+    "prepare": "npm run build"
   },
+  "files": [
+    "dist",
+    "bin"
+  ],
   "dependencies": {
     "@nurulizyansyaza/courier-service-core": "file:../courier-service-core",
     "commander": "^12.1.0"
