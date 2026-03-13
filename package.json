@@ -1,0 +1,33 @@
+{
+  "name": "@nurulizyansyaza/courier-service-cli",
+  "version": "1.0.0",
+  "description": "CLI for Courier Service delivery cost and time estimation",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "courier-service": "bin/courier-service"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "start:cost": "ts-node src/cli.ts cost",
+    "start:delivery": "ts-node src/cli.ts delivery",
+    "prepare": "npm run build"
+  },
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "dependencies": {
+    "@nurulizyansyaza/courier-service-core": "file:../courier-service-core",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.14",
+    "@types/node": "^20.17.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.5",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.7.3"
+  }
+}
