@@ -23,4 +23,7 @@ program
     runDelivery(lines);
   });
 
-void program.parseAsync();
+program.parseAsync().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});
