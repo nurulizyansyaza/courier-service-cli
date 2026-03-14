@@ -1,6 +1,6 @@
 # @nurulizyansyaza/courier-service-cli
 
-CLI application for the **Courier Service** coding challenge. Reads input from stdin and outputs delivery cost/time estimates.
+CLI application for the **Courier Service** App Calculator. Reads input from stdin and outputs delivery cost/time estimates.
 
 ## Setup
 
