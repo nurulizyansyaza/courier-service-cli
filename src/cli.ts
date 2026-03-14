@@ -18,9 +18,10 @@ program
 program
   .command('delivery')
   .description('Estimate delivery time and cost (Problem 2)')
-  .action(async () => {
+  .option('--detailed', 'Show detailed output with vehicle/round info')
+  .action(async (opts) => {
     const lines = await readInput();
-    runDelivery(lines);
+    runDelivery(lines, opts.detailed);
   });
 
 program.parseAsync().catch((error) => {

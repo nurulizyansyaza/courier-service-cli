@@ -22,13 +22,12 @@ describe('runCost (Problem 1)', () => {
     ]);
   });
 
-  it('handles no valid offers', () => {
-    runCost(['50 1', 'ITEM1 10 20 NA']);
-    expect(output).toEqual(['ITEM1 0 250']);
+  it('throws on empty input', () => {
+    expect(() => runCost([])).toThrow('Empty input');
   });
 
-  it('throws on invalid header', () => {
-    expect(() => runCost(['abc'])).toThrow('Invalid header');
+  it('throws on invalid package ID format', () => {
+    expect(() => runCost(['50 1', 'ITEM1 10 20 OFR001'])).toThrow('Must be "PKG" or "pkg"');
   });
 });
 
@@ -53,6 +52,30 @@ describe('runDelivery (Problem 2)', () => {
   });
 
   it('throws when fleet line is missing', () => {
-    expect(() => runDelivery(['100 1', 'P1 10 10 NA'])).toThrow();
+    expect(() => runDelivery(['100 1', 'PKG1 10 10 OFR001'])).toThrow('vehicle info');
+  });
+});
+
+describe('runDelivery --detailed', () => {
+  it('prints detailed output with vehicle and round info', () => {
+    runDelivery([
+      '100 1',
+      'PKG1 50 30 OFR001',
+      '1 70 200',
+    ], true);
+    expect(output.length).toBe(2);
+    expect(output[0]).toContain('PKG1');
+    expect(output[1]).toContain('vehicle=');
+    expect(output[1]).toContain('round=');
+  });
+
+  it('shows undeliverable reason for overweight packages', () => {
+    runDelivery([
+      '100 1',
+      'PKG1 300 100 OFR001',
+      '1 70 200',
+    ], true);
+    expect(output[0]).toContain('N/A');
+    expect(output[1]).toContain('out for delivery');
   });
 });
