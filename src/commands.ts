@@ -2,24 +2,10 @@ import {
   parseInputBlock,
   estimateCost, estimateDelivery,
   estimateDetailedDelivery,
-  DEFAULT_OFFERS,
-  Offer, CalcOfferCriteria,
+  CalcOfferCriteria,
+  DEFAULT_CALC_OFFERS,
+  toOfferArray,
 } from '@nurulizyansyaza/courier-service-core';
-
-const DEFAULT_CALC_OFFERS: Record<string, CalcOfferCriteria> = {
-  OFR001: { discount: 10, minDistance: 0, maxDistance: 200, minWeight: 70, maxWeight: 200 },
-  OFR002: { discount: 7, minDistance: 50, maxDistance: 150, minWeight: 100, maxWeight: 250 },
-  OFR003: { discount: 5, minDistance: 50, maxDistance: 250, minWeight: 10, maxWeight: 150 },
-};
-
-function toOfferArray(offers: Record<string, CalcOfferCriteria>): Offer[] {
-  return Object.entries(offers).map(([code, c]) => ({
-    code,
-    discount: c.discount,
-    weight: { min: c.minWeight, max: c.maxWeight },
-    distance: { min: c.minDistance, max: c.maxDistance },
-  }));
-}
 
 export function runCost(lines: string[]): void {
   if (lines.length === 0) throw new Error('Empty input');

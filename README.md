@@ -39,6 +39,28 @@ PKG4 105 1395 0.85
 PKG5 0 2125 4.19
 ```
 
+### Detailed Delivery Output
+
+Use `--detailed` to see vehicle assignments, delivery rounds, and return times:
+
+```bash
+printf '100 5\nPKG1 50 30 OFR001\nPKG2 75 125 OFR008\nPKG3 175 100 OFR003\nPKG4 110 60 OFR002\nPKG5 155 95 NA\n2 70 200\n' | node bin/courier-service delivery --detailed
+```
+
+Output:
+```
+PKG1 0 750 3.98
+  └─ vehicle=1 round=2 return=4.84
+PKG2 0 1475 1.78
+  └─ vehicle=2 round=1 return=3.56
+PKG3 0 2350 1.42
+  └─ vehicle=1 round=1 return=2.84
+PKG4 105 1395 0.85
+  └─ vehicle=1 round=1 return=2.84
+PKG5 0 2125 4.19
+  └─ vehicle=2 round=2 return=6.90
+```
+
 ### Input Format
 
 **Problem 1:**
