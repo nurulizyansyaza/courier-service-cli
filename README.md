@@ -84,6 +84,15 @@ vehicleCount maxSpeed maxWeight
 npm test
 ```
 
+## CI/CD
+
+GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push/PR to `main`:
+
+1. **Test** — checks out `courier-service-core`, builds it, then runs CLI tests on Node 18 + 20
+2. **Trigger Staging Deploy** — on push to `main`, dispatches a `repository_dispatch` event to [`courier-service`](https://github.com/nurulizyansyaza/courier-service), which triggers the staging deployment pipeline
+
+Requires a `DEPLOY_TRIGGER_TOKEN` secret (fine-grained PAT with Actions + Contents write access on the `courier-service` repo).
+
 ## Project Structure
 
 ```
