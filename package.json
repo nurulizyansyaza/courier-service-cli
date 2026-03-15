@@ -18,6 +18,9 @@
     "dist",
     "bin"
   ],
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "@nurulizyansyaza/courier-service-core": "file:../courier-service-core",
     "commander": "^12.1.0"
