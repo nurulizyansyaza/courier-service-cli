@@ -32,11 +32,11 @@ printf '100 5\nPKG1 50 30 OFR001\nPKG2 75 125 OFR008\nPKG3 175 100 OFR003\nPKG4 
 
 Output:
 ```
-PKG1 0 750 3.98
+PKG1 0 750 4.00
 PKG2 0 1475 1.78
 PKG3 0 2350 1.42
 PKG4 105 1395 0.85
-PKG5 0 2125 4.19
+PKG5 0 2125 4.21
 ```
 
 ### Detailed Delivery Output
@@ -49,16 +49,16 @@ printf '100 5\nPKG1 50 30 OFR001\nPKG2 75 125 OFR008\nPKG3 175 100 OFR003\nPKG4 
 
 Output:
 ```
-PKG1 0 750 3.98
-  └─ vehicle=1 round=2 return=4.84
+PKG1 0 750 4.00
+  └─ vehicle=1 round=4 return=4.43
 PKG2 0 1475 1.78
-  └─ vehicle=2 round=1 return=3.56
+  └─ vehicle=1 round=1 return=3.57
 PKG3 0 2350 1.42
-  └─ vehicle=1 round=1 return=2.84
+  └─ vehicle=2 round=2 return=2.86
 PKG4 105 1395 0.85
-  └─ vehicle=1 round=1 return=2.84
-PKG5 0 2125 4.19
-  └─ vehicle=2 round=2 return=6.90
+  └─ vehicle=1 round=1 return=3.57
+PKG5 0 2125 4.21
+  └─ vehicle=2 round=3 return=5.57
 ```
 
 ### Input Format
