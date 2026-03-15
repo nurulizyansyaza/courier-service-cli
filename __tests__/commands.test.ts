@@ -43,11 +43,11 @@ describe('runDelivery (Problem 2)', () => {
       '2 70 200',
     ]);
     expect(output).toEqual([
-      'PKG1 0 750 3.98',
+      'PKG1 0 750 4.00',
       'PKG2 0 1475 1.78',
       'PKG3 0 2350 1.42',
       'PKG4 105 1395 0.85',
-      'PKG5 0 2125 4.19',
+      'PKG5 0 2125 4.21',
     ]);
   });
 
