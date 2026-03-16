@@ -102,8 +102,9 @@ node bin/courier-service interactive --api-url http://localhost:4000
 | `clear` | Clear screen |
 | `/restart` | Show welcome screen |
 | `help` | Show available commands |
+| `exit` / `quit` | Exit the application |
 | `↑` / `↓` | Navigate command history |
-| `Ctrl+C` | Cancel current input |
+| `Ctrl+C` | Cancel current input (not exit) |
 
 ### Problem 1 — Delivery Cost Estimation (One-shot)
 
@@ -188,7 +189,10 @@ The interactive TUI replicates the React frontend's full functionality in a term
 | **Welcome screen** | ✅ ASCII art + offers | ✅ Matching ASCII art + offers |
 | **Result cards** | ✅ Cost breakdown, formula | ✅ Full breakdown with formula |
 | **Error display** | ✅ Red text | ✅ Red text (matching style) |
-| **Undeliverable warnings** | ✅ Amber banner | ✅ Amber ⚠ indicator |
+| **Undeliverable warnings** | ✅ Amber banner + "In Transit" | ✅ Amber ⚠ + "In Transit" |
+| **In Transit label** | ✅ | ✅ |
+| **Notified badge** | ✅ | ✅ |
+| **Error line breaks** | ✅ | ✅ |
 | **Vehicle/round info** | ✅ | ✅ |
 | **Command routing** | ✅ 9 commands | ✅ 4 commands + shortcuts |
 | **Command history** | ✅ ↑/↓ localStorage | ✅ ↑/↓ session file |
@@ -230,7 +234,7 @@ The CLI will try the API first for validation/rate-limiting benefits, then fall 
 npm test
 ```
 
-**31 tests** across 5 test suites:
+**32 tests** across 5 test suites:
 - `commands.test.ts` — Cost/delivery one-shot calculation tests
 - `io.test.ts` — stdin reader tests
 - `cliCommands.test.ts` — Interactive command routing tests
@@ -245,8 +249,7 @@ npm test
 | `commander` | One-shot CLI argument parsing |
 | `ink` | React-based terminal UI framework |
 | `react` | Component model for Ink (v17) |
-| `ink-text-input` | Text input component |
-| `ink-spinner` | Loading spinner component |
+| `ink-spinner` | Loading spinner component (listed dependency) |
 | `chalk` | Terminal string styling |
 
 ## CLI Flow
@@ -321,15 +324,21 @@ Requires a `DEPLOY_TRIGGER_TOKEN` secret (fine-grained PAT with Actions + Conten
 **UI Improvements (matching React frontend exactly):**
 - **Welcome screen** — full-size motorcycle ASCII art + COURIER block letters with spacing between them
 - **Result cards** — complete cost breakdown with formula (`baseCost + (weight × 10) + (distance × 5)`), discount percentage, offer code, base cost/weight/distance, vehicle round details, packages remaining, round trip times
-- **Error display** — simplified to match frontend (plain red text, no bordered box)
+- **ResultCard** — shows "📦 In Transit" label for undeliverable packages (matching frontend)
+- **ResultCard** — shows "Notified" badge with strikethrough for renamed packages (matching frontend)
+- **ResultCard** — shows "Delivery Time: N/A" for undeliverable packages in time mode (previously blank)
+- **Error display** — simplified to match frontend (plain red text, no bordered box); each error on a separate line with blank line spacing between errors
 - **Help screen** — matching command colors (emerald/amber/cyan) and layout
 - **Input prompt** — custom raw input handler replacing `ink-text-input` for proper Ctrl+C and arrow key behavior; hint text shown below prompt
 - **Custom input handling** — replaced `ink-text-input` with direct `useInput` for reliable Ctrl+C cancel, history navigation, and no conflicts with Ink's built-in key handling
+- **Transit calculation** — now uses `DetailedDeliveryResult[]` from core instead of parsing text output; all vehicle/round/time data preserved for transit results
 
 **Commands Removed:**
 - `/connect` and `/disconnect` — API URL is now set via CLI flags only (`--api-url`, `--local`)
-- `exit` — removed to prevent accidental process termination; use terminal's native Ctrl+C (twice) to close
 - "API: connected" status bar indicator removed
+
+**Commands Restored:**
+- `exit` / `quit` — restored for exiting the application; `Ctrl+C` cancels current input (not exit)
 
 **Data Enhancements:**
 - Unified `PackageResult` type with all detail fields (baseCost, weight, distance, offerCode, deliveryCost, deliveryRound, vehicleId, packagesRemaining, currentTime, vehicleReturnTime, roundTripTime)
@@ -356,7 +365,7 @@ Requires a `DEPLOY_TRIGGER_TOKEN` secret (fine-grained PAT with Actions + Conten
 - **Command history** — ↑/↓ arrow keys to navigate previous commands
 - **Session persistence** — mode, API URL, history saved to `~/.courier-cli-session.json`
 - **Multi-line input** — auto-detects expected line count from header, shows line numbers
-- **9 interactive commands** — `/change mode`, `/connect`, `/disconnect`, `clear`, `/restart`, `help`, `exit`, `Ctrl+C`
+- **9 interactive commands** — `/change mode`, `/connect`, `/disconnect`, `clear`, `/restart`, `help`, `exit`/`quit`, `Ctrl+C`
 
 **New Dependencies:**
 - `ink@3` — React-based terminal UI framework
