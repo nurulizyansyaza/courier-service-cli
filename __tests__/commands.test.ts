@@ -27,7 +27,7 @@ describe('runCost (Problem 1)', () => {
   });
 
   it('throws on invalid package ID format', () => {
-    expect(() => runCost(['50 1', 'ITEM1 10 20 OFR001'])).toThrow('Must be "PKG" or "pkg"');
+    expect(() => runCost(['50 1', 'ITEM1 10 20 OFR001'])).toThrow('Invalid package ID');
   });
 });
 
