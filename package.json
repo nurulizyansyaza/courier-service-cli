@@ -23,11 +23,17 @@
   },
   "dependencies": {
     "@nurulizyansyaza/courier-service-core": "file:../courier-service-core",
-    "commander": "^12.1.0"
+    "chalk": "^4.1.2",
+    "commander": "^12.1.0",
+    "ink": "^3.2.0",
+    "ink-spinner": "^4.0.3",
+    "ink-text-input": "^4.0.3",
+    "react": "^17.0.2"
   },
   "devDependencies": {
     "@types/jest": "^29.5.14",
     "@types/node": "^20.17.12",
+    "@types/react": "^17.0.91",
     "jest": "^29.7.0",
     "ts-jest": "^29.2.5",
     "ts-node": "^10.9.2",
