@@ -32,7 +32,3 @@ export function processCommand(input: string): CommandAction {
 
   return null;
 }
-
-export function isCommand(input: string): boolean {
-  return processCommand(input) !== null;
-}

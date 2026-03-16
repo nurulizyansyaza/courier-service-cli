@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Box, Text, useStdout, useApp } from 'ink';
+import { Box, Text, useApp } from 'ink';
 import { colors } from './theme';
 import { WelcomeScreen } from './WelcomeScreen';
 import { HelpScreen } from './HelpScreen';
@@ -26,7 +26,6 @@ interface AppProps {
 
 export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   const { exit } = useApp();
-  const { write: writeStdout } = useStdout();
 
   const [session, setSession] = useState<SessionData>(() => {
     const loaded = loadSession();
@@ -188,7 +187,6 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
 
       switch (action.type) {
         case 'clear':
-          writeStdout('\x1B[2J\x1B[3J\x1B[H');
           setHistory([{ type: 'welcome' }]);
           break;
 
