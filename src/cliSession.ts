@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import type { TransitPackage } from './cliCalculationRunner';
+import type { TransitPackage } from './types';
 
 export interface SessionData {
   mode: 'cost' | 'time';

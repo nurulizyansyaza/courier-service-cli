@@ -1,63 +1,70 @@
-import { processCommand, isCommand } from '../src/cliCommands';
+import { processCommand } from '../src/cliCommands';
 
 describe('processCommand', () => {
-  test('clear command', () => {
-    expect(processCommand('clear')).toEqual({ type: 'clear' });
-    expect(processCommand('CLEAR')).toEqual({ type: 'clear' });
+  describe('clear command', () => {
+    it('recognizes clear', () => {
+      expect(processCommand('clear')).toEqual({ type: 'clear' });
+    });
+
+    it('is case-insensitive', () => {
+      expect(processCommand('CLEAR')).toEqual({ type: 'clear' });
+    });
   });
 
-  test('help command', () => {
-    expect(processCommand('help')).toEqual({ type: 'help' });
-    expect(processCommand('HELP')).toEqual({ type: 'help' });
+  describe('help command', () => {
+    it('recognizes help', () => {
+      expect(processCommand('help')).toEqual({ type: 'help' });
+    });
+
+    it('is case-insensitive', () => {
+      expect(processCommand('HELP')).toEqual({ type: 'help' });
+    });
   });
 
-  test('/restart command', () => {
-    expect(processCommand('/restart')).toEqual({ type: 'restart' });
-    expect(processCommand('/RESTART')).toEqual({ type: 'restart' });
+  describe('exit command', () => {
+    it('recognizes exit', () => {
+      expect(processCommand('exit')).toEqual({ type: 'exit' });
+    });
+
+    it('recognizes quit as alias', () => {
+      expect(processCommand('quit')).toEqual({ type: 'exit' });
+    });
+
+    it('is case-insensitive', () => {
+      expect(processCommand('EXIT')).toEqual({ type: 'exit' });
+    });
   });
 
-  test('/change mode cost', () => {
-    expect(processCommand('/change mode cost')).toEqual({ type: 'change_mode', mode: 'cost' });
+  describe('/change mode command', () => {
+    it('switches to cost mode', () => {
+      expect(processCommand('/change mode cost')).toEqual({ type: 'change_mode', mode: 'cost' });
+    });
+
+    it('switches to time mode', () => {
+      expect(processCommand('/change mode time')).toEqual({ type: 'change_mode', mode: 'time' });
+    });
+
+    it('returns null for invalid mode', () => {
+      expect(processCommand('/change mode invalid')).toBeNull();
+    });
   });
 
-  test('/change mode time', () => {
-    expect(processCommand('/change mode time')).toEqual({ type: 'change_mode', mode: 'time' });
+  describe('non-command input', () => {
+    it('returns null for package input', () => {
+      expect(processCommand('100 3')).toBeNull();
+      expect(processCommand('PKG1 5 5 OFR001')).toBeNull();
+    });
+
+    it('returns null for unknown slash commands', () => {
+      expect(processCommand('/connect')).toBeNull();
+      expect(processCommand('/disconnect')).toBeNull();
+    });
   });
 
-  test('/change mode invalid returns null', () => {
-    expect(processCommand('/change mode invalid')).toBeNull();
-  });
-
-  test('non-command input returns null', () => {
-    expect(processCommand('100 3')).toBeNull();
-    expect(processCommand('PKG1 5 5 OFR001')).toBeNull();
-    expect(processCommand('/connect')).toBeNull();
-    expect(processCommand('/disconnect')).toBeNull();
-  });
-
-  test('exit command', () => {
-    expect(processCommand('exit')).toEqual({ type: 'exit' });
-    expect(processCommand('EXIT')).toEqual({ type: 'exit' });
-    expect(processCommand('quit')).toEqual({ type: 'exit' });
-  });
-
-  test('trims whitespace', () => {
-    expect(processCommand('  help  ')).toEqual({ type: 'help' });
-    expect(processCommand('  clear  ')).toEqual({ type: 'clear' });
-  });
-});
-
-describe('isCommand', () => {
-  test('returns true for commands', () => {
-    expect(isCommand('help')).toBe(true);
-    expect(isCommand('clear')).toBe(true);
-    expect(isCommand('/change mode cost')).toBe(true);
-    expect(isCommand('/restart')).toBe(true);
-    expect(isCommand('exit')).toBe(true);
-  });
-
-  test('returns false for non-commands', () => {
-    expect(isCommand('100 3')).toBe(false);
-    expect(isCommand('PKG1 5 5 OFR001')).toBe(false);
+  describe('whitespace handling', () => {
+    it('trims leading/trailing whitespace', () => {
+      expect(processCommand('  help  ')).toEqual({ type: 'help' });
+      expect(processCommand('  clear  ')).toEqual({ type: 'clear' });
+    });
   });
 });

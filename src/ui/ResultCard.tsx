@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { colors } from './theme';
-import type { PackageResult } from '../cliCalculationRunner';
+import type { PackageResult } from '../types';
 
 interface ResultCardProps {
   mode: 'cost' | 'time';

@@ -6,96 +6,30 @@ import {
   type DetailedDeliveryResult,
   type TransitPackageInput,
 } from '@nurulizyansyaza/courier-service-core';
+import type {
+  PackageResult,
+  TransitPackage,
+  CalculationResult,
+  ApiCostResult,
+  ApiTimeData,
+} from './types';
+import { mapCostResult, mapTimeResult, mapToPackageResult, type PackageDetail } from './resultMapper';
 
-export interface PackageResult {
-  id: string;
-  discount: number;
-  totalCost: number;
-  baseCost: number;
-  weight: number;
-  distance: number;
-  offerCode?: string;
-  deliveryCost: number;
-  deliveryTime?: number;
-  vehicleId?: number;
-  deliveryRound?: number;
-  packagesRemaining?: number;
-  currentTime?: number;
-  vehicleReturnTime?: number;
-  roundTripTime?: number;
-  undeliverable?: boolean;
-  undeliverableReason?: string;
-  renamedFrom?: string;
-}
+// Re-export types for consumers
+export type { PackageResult, TransitPackage, CalculationResult } from './types';
+export type { CalculationSuccess, CalculationFailure } from './types';
 
-export interface TransitPackage {
-  id: string;
-  weight: number;
-  distance: number;
-  offerCode: string;
-}
-
-export interface CalculationSuccess {
-  success: true;
-  mode: 'cost' | 'time';
-  results: PackageResult[];
-  updatedTransit?: TransitPackage[];
-  renamedPackages?: { oldId: string; newId: string }[];
-}
-
-export interface CalculationFailure {
-  success: false;
-  error: string;
-}
-
-export type CalculationResult = CalculationSuccess | CalculationFailure;
-
-interface ApiCostResult {
-  id: string;
-  discount: number;
-  cost: number;
-}
-
-interface ApiTimeData {
-  results: ApiTimeResult[];
-  stillInTransit?: TransitPackage[];
-  newTransitPackages?: TransitPackage[];
-  renamedPackages?: { oldId: string; newId: string }[];
-}
-
-interface ApiTimeResult {
-  id: string;
-  discount: number;
-  totalCost: number;
-  deliveryTime?: number;
-  vehicleId?: number;
-  deliveryRound?: number;
-  packagesRemaining?: number;
-  currentTime?: number;
-  vehicleReturnTime?: number;
-  roundTripTime?: number;
-  undeliverable?: boolean;
-  undeliverableReason?: string;
-  baseCost?: number;
-  weight?: number;
-  distance?: number;
-  offerCode?: string;
-  deliveryCost?: number;
-}
-
-// Parse input to extract package details for enriching API/transit results
-function extractPackageDetails(input: string, mode: 'cost' | 'time') {
+function extractPackageDetails(input: string, mode: 'cost' | 'time'): Map<string, PackageDetail> {
   try {
     const { baseCost, packages } = parseInput(input, mode);
-    const detailMap = new Map<string, { baseCost: number; weight: number; distance: number; offerCode?: string; deliveryCost: number }>();
+    const detailMap = new Map<string, PackageDetail>();
     for (const pkg of packages) {
-      const deliveryCost = baseCost + pkg.weight * 10 + pkg.distance * 5;
       detailMap.set(pkg.id.toUpperCase(), {
         baseCost,
         weight: pkg.weight,
         distance: pkg.distance,
         offerCode: pkg.offerCode,
-        deliveryCost,
+        deliveryCost: baseCost + pkg.weight * 10 + pkg.distance * 5,
       });
     }
     return detailMap;
@@ -133,23 +67,11 @@ async function fetchFromApi(
 
     if (mode === 'cost') {
       const data = await res.json() as { results: ApiCostResult[] };
-      const results: PackageResult[] = data.results.map((r) => {
-        const d = details.get(r.id.toUpperCase());
-        return {
-          id: r.id,
-          discount: r.discount,
-          totalCost: r.cost,
-          baseCost: d?.baseCost ?? 0,
-          weight: d?.weight ?? 0,
-          distance: d?.distance ?? 0,
-          offerCode: d?.offerCode,
-          deliveryCost: d?.deliveryCost ?? 0,
-        };
-      });
+      const results = data.results.map(r => mapToPackageResult(r, details));
       return { success: true, mode: 'cost', results };
     } else {
       const data = await res.json() as ApiTimeData;
-      const results: PackageResult[] = data.results.map((r) => {
+      const results: PackageResult[] = data.results.map(r => {
         const d = details.get(r.id.toUpperCase());
         return {
           id: r.id,
@@ -175,11 +97,8 @@ async function fetchFromApi(
         ...(data.stillInTransit || []),
         ...(data.newTransitPackages || []),
       ];
-      const renamedPackages = data.renamedPackages && data.renamedPackages.length > 0
-        ? data.renamedPackages.map((r: { oldId: string; newId: string }) => ({
-            oldId: r.oldId,
-            newId: r.newId,
-          }))
+      const renamedPackages = data.renamedPackages?.length
+        ? data.renamedPackages
         : undefined;
       return { success: true, mode: 'time', results, updatedTransit, renamedPackages };
     }
@@ -188,101 +107,67 @@ async function fetchFromApi(
   }
 }
 
+function runLocalCost(input: string): CalculationResult {
+  const { baseCost, packages } = parseInput(input, 'cost');
+  const results = packages.map(pkg => {
+    const { discount, totalCost } = calculatePackageCost(pkg, baseCost);
+    return mapCostResult(pkg, baseCost, discount, totalCost);
+  });
+  return { success: true, mode: 'cost', results };
+}
+
+function runLocalTimeWithTransit(
+  input: string,
+  transitPackages: TransitPackage[],
+): CalculationResult {
+  const transitInputs: TransitPackageInput[] = transitPackages.map(t => ({
+    id: t.id,
+    weight: t.weight,
+    distance: t.distance,
+    offerCode: t.offerCode,
+  }));
+  const transitResult = calculateDeliveryTimeWithTransit(input, transitInputs);
+  const updatedTransit: TransitPackage[] = [
+    ...transitResult.stillInTransit,
+    ...transitResult.newTransitPackages,
+  ];
+  const renamedPackages = transitResult.renamedPackages.length > 0
+    ? transitResult.renamedPackages
+    : undefined;
+  const results = transitResult.results.map(mapTimeResult);
+  return { success: true, mode: 'time', results, updatedTransit, renamedPackages };
+}
+
+function runLocalTime(input: string): CalculationResult {
+  const { baseCost, packages, vehicles } = parseInput(input, 'time');
+  if (!vehicles) {
+    return { success: false, error: 'Missing fleet line: expected "noOfVehicles maxSpeed maxCarrierWeight"' };
+  }
+  const deliveryResults = computeDeliveryResultsFromParsed(baseCost, packages, vehicles);
+  const results = deliveryResults.map(mapTimeResult);
+  const updatedTransit: TransitPackage[] = deliveryResults
+    .filter((r: DetailedDeliveryResult) => r.undeliverable)
+    .map((r: DetailedDeliveryResult) => ({
+      id: r.id,
+      weight: r.weight,
+      distance: r.distance,
+      offerCode: r.offerCode || '',
+    }));
+  return { success: true, mode: 'time', results, updatedTransit };
+}
+
 function runLocally(
   input: string,
   mode: 'cost' | 'time',
   transitPackages: TransitPackage[],
 ): CalculationResult {
   if (mode === 'cost') {
-    const { baseCost, packages } = parseInput(input, 'cost');
-    const results: PackageResult[] = packages.map((pkg) => {
-      const { discount, totalCost } = calculatePackageCost(pkg, baseCost);
-      const deliveryCost = baseCost + pkg.weight * 10 + pkg.distance * 5;
-      return {
-        id: pkg.id,
-        discount: Math.round(discount),
-        totalCost: Math.round(totalCost),
-        baseCost,
-        weight: pkg.weight,
-        distance: pkg.distance,
-        offerCode: pkg.offerCode,
-        deliveryCost,
-      };
-    });
-    return { success: true, mode: 'cost', results };
-  } else {
-    if (transitPackages.length > 0) {
-      const transitInputs: TransitPackageInput[] = transitPackages.map((t) => ({
-        id: t.id,
-        weight: t.weight,
-        distance: t.distance,
-        offerCode: t.offerCode,
-      }));
-      const transitResult = calculateDeliveryTimeWithTransit(input, transitInputs);
-      const updatedTransit: TransitPackage[] = [
-        ...transitResult.stillInTransit,
-        ...transitResult.newTransitPackages,
-      ];
-      const renamedPackages = transitResult.renamedPackages.length > 0
-        ? transitResult.renamedPackages
-        : undefined;
-
-      const results: PackageResult[] = transitResult.results.map((r) => ({
-        id: r.id,
-        discount: Math.round(r.discount),
-        totalCost: Math.round(r.totalCost),
-        baseCost: r.baseCost,
-        weight: r.weight,
-        distance: r.distance,
-        offerCode: r.offerCode,
-        deliveryCost: r.deliveryCost,
-        deliveryTime: r.deliveryTime,
-        vehicleId: r.vehicleId,
-        deliveryRound: r.deliveryRound,
-        packagesRemaining: r.packagesRemaining,
-        currentTime: r.currentTime,
-        vehicleReturnTime: r.vehicleReturnTime,
-        roundTripTime: r.roundTripTime,
-        undeliverable: r.undeliverable,
-        undeliverableReason: r.undeliverableReason,
-      }));
-      return { success: true, mode: 'time', results, updatedTransit, renamedPackages };
-    }
-
-    const { baseCost, packages, vehicles } = parseInput(input, 'time');
-    if (!vehicles) {
-      return { success: false, error: 'Missing fleet line: expected "noOfVehicles maxSpeed maxCarrierWeight"' };
-    }
-    const deliveryResults = computeDeliveryResultsFromParsed(baseCost, packages, vehicles);
-    const results: PackageResult[] = deliveryResults.map((r: DetailedDeliveryResult) => ({
-      id: r.id,
-      discount: Math.round(r.discount),
-      totalCost: Math.round(r.totalCost),
-      baseCost: r.baseCost,
-      weight: r.weight,
-      distance: r.distance,
-      offerCode: r.offerCode,
-      deliveryCost: r.deliveryCost,
-      deliveryTime: r.deliveryTime,
-      vehicleId: r.vehicleId,
-      deliveryRound: r.deliveryRound,
-      packagesRemaining: r.packagesRemaining,
-      currentTime: r.currentTime,
-      vehicleReturnTime: r.vehicleReturnTime,
-      roundTripTime: r.roundTripTime,
-      undeliverable: r.undeliverable,
-      undeliverableReason: r.undeliverableReason,
-    }));
-    const updatedTransit: TransitPackage[] = deliveryResults
-      .filter((r: DetailedDeliveryResult) => r.undeliverable)
-      .map((r: DetailedDeliveryResult) => ({
-        id: r.id,
-        weight: r.weight,
-        distance: r.distance,
-        offerCode: r.offerCode || '',
-      }));
-    return { success: true, mode: 'time', results, updatedTransit };
+    return runLocalCost(input);
   }
+  if (transitPackages.length > 0) {
+    return runLocalTimeWithTransit(input, transitPackages);
+  }
+  return runLocalTime(input);
 }
 
 export async function runCalculation(

@@ -1,23 +1,11 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, Text, useApp } from 'ink';
 import { colors } from './theme';
-import { WelcomeScreen } from './WelcomeScreen';
-import { HelpScreen } from './HelpScreen';
-import { ResultCard } from './ResultCard';
-import { ErrorDisplay } from './ErrorDisplay';
+import { HistoryRenderer, type HistoryItem } from './HistoryRenderer';
 import { InputPrompt } from './InputPrompt';
 import { processCommand } from '../cliCommands';
-import { runCalculation, type CalculationResult } from '../cliCalculationRunner';
+import { runCalculation } from '../cliCalculationRunner';
 import { loadSession, saveSession, type SessionData } from '../cliSession';
-
-type HistoryItem =
-  | { type: 'welcome' }
-  | { type: 'help' }
-  | { type: 'input'; content: string }
-  | { type: 'result'; data: CalculationResult }
-  | { type: 'info'; content: string }
-  | { type: 'error'; content: string }
-  | { type: 'command'; content: string };
 
 interface AppProps {
   initialApiUrl?: string;
@@ -43,7 +31,6 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [pastedLines, setPastedLines] = useState<string[]>([]);
 
-  // Refs for values needed in callbacks to avoid stale closures
   const sessionRef = useRef(session);
   sessionRef.current = session;
   const commandHistoryRef = useRef(commandHistory);
@@ -86,7 +73,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
 
     if (result.success && result.mode === 'time' && result.updatedTransit) {
       setSession(prev => ({ ...prev, transitPackages: result.updatedTransit! }));
-      if (result.renamedPackages && result.renamedPackages.length > 0) {
+      if (result.renamedPackages?.length) {
         const renames = result.renamedPackages.map(r => `${r.oldId} → ${r.newId}`).join(', ');
         addHistory({ type: 'info', content: `Renamed packages: ${renames}` });
       }
@@ -95,20 +82,31 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     setIsCalculating(false);
   }, [addHistory]);
 
+  const clearPastedLines = useCallback(() => {
+    setPastedLines([]);
+    pastedLinesRef.current = [];
+  }, []);
+
+  const resetCollecting = useCallback(() => {
+    setIsCollecting(false);
+    isCollectingRef.current = false;
+    setCollectedLines([]);
+    collectedLinesRef.current = [];
+    setExpectedPackageCount(null);
+    expectedPackageCountRef.current = null;
+  }, []);
+
   const handleCancelInput = useCallback(() => {
     if (pastedLinesRef.current.length > 0) {
-      setPastedLines([]);
-      pastedLinesRef.current = [];
+      clearPastedLines();
       addHistory({ type: 'info', content: 'Input cancelled' });
       return;
     }
     if (isCollectingRef.current) {
-      setIsCollecting(false);
-      setCollectedLines([]);
-      setExpectedPackageCount(null);
+      resetCollecting();
       addHistory({ type: 'info', content: 'Input cancelled' });
     }
-  }, [addHistory]);
+  }, [addHistory, clearPastedLines, resetCollecting]);
 
   const handleEditLine = useCallback((index: number, newValue: string) => {
     if (pastedLinesRef.current.length > 0) {
@@ -133,82 +131,93 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     pastedLinesRef.current = lines;
   }, []);
 
+  const handlePastedSubmit = useCallback(() => {
+    const lines = pastedLinesRef.current;
+    clearPastedLines();
+    const fullInput = lines.join('\n');
+    addToCommandHistory(fullInput);
+    executeCalculation(fullInput);
+  }, [addToCommandHistory, executeCalculation, clearPastedLines]);
+
+  const handleCollectedLine = useCallback((trimmed: string) => {
+    const newLines = [...collectedLinesRef.current, trimmed];
+    setCollectedLines(newLines);
+    collectedLinesRef.current = newLines;
+
+    const mode = sessionRef.current.mode;
+    const pkgCount = expectedPackageCountRef.current!;
+    const totalExpected = mode === 'cost' ? pkgCount + 1 : pkgCount + 2;
+
+    if (newLines.length >= totalExpected) {
+      resetCollecting();
+      const fullInput = newLines.join('\n');
+      addToCommandHistory(fullInput);
+      executeCalculation(fullInput);
+    }
+  }, [addToCommandHistory, executeCalculation, resetCollecting]);
+
+  const handleCommand = useCallback((trimmed: string) => {
+    const action = processCommand(trimmed);
+    if (!action) return false;
+
+    addToCommandHistory(trimmed);
+    switch (action.type) {
+      case 'clear':
+        setHistory([{ type: 'welcome' }]);
+        break;
+      case 'help':
+        addHistory({ type: 'command', content: trimmed });
+        addHistory({ type: 'help' });
+        break;
+      case 'change_mode':
+        addHistory({ type: 'command', content: trimmed });
+        setSession(prev => ({ ...prev, mode: action.mode }));
+        addHistory({ type: 'info', content: `Mode changed to ${action.mode}` });
+        break;
+      case 'exit':
+        exit();
+        break;
+    }
+    return true;
+  }, [addHistory, addToCommandHistory, exit]);
+
+  const startCollecting = useCallback((trimmed: string, packageCount: number) => {
+    setCollectedLines([trimmed]);
+    collectedLinesRef.current = [trimmed];
+    setExpectedPackageCount(packageCount);
+    expectedPackageCountRef.current = packageCount;
+    setIsCollecting(true);
+    isCollectingRef.current = true;
+  }, []);
+
   const handleSubmit = useCallback((value: string) => {
     const trimmed = value.trim();
 
-    // If pasted lines are pending, Enter executes them
+    // Confirm pasted lines
     if (pastedLinesRef.current.length > 0 && !trimmed) {
-      const lines = pastedLinesRef.current;
-      setPastedLines([]);
-      pastedLinesRef.current = [];
-      const fullInput = lines.join('\n');
-      addToCommandHistory(fullInput);
-      executeCalculation(fullInput);
+      handlePastedSubmit();
       return;
     }
 
     if (!trimmed) return;
 
-    // If currently collecting multi-line input
+    // Collecting multi-line input
     if (isCollectingRef.current) {
-      const newLines = [...collectedLinesRef.current, trimmed];
-      setCollectedLines(newLines);
-      collectedLinesRef.current = newLines;
-
-      const mode = sessionRef.current.mode;
-      const pkgCount = expectedPackageCountRef.current!;
-      const totalExpected = mode === 'cost' ? pkgCount + 1 : pkgCount + 2;
-
-      if (newLines.length >= totalExpected) {
-        setIsCollecting(false);
-        isCollectingRef.current = false;
-        setCollectedLines([]);
-        collectedLinesRef.current = [];
-        setExpectedPackageCount(null);
-        expectedPackageCountRef.current = null;
-        const fullInput = newLines.join('\n');
-        addToCommandHistory(fullInput);
-        executeCalculation(fullInput);
-      }
+      handleCollectedLine(trimmed);
       return;
     }
 
-    // If input contains newlines (e.g. from history), execute directly
+    // Multiline from history
     if (trimmed.includes('\n')) {
       addToCommandHistory(trimmed);
       executeCalculation(trimmed);
       return;
     }
 
-    // Check if it's a command
-    const action = processCommand(trimmed);
-    if (action) {
-      addToCommandHistory(trimmed);
+    // Commands
+    if (handleCommand(trimmed)) return;
 
-      switch (action.type) {
-        case 'clear':
-          setHistory([{ type: 'welcome' }]);
-          break;
-
-        case 'help':
-          addHistory({ type: 'command', content: trimmed });
-          addHistory({ type: 'help' });
-          break;
-
-        case 'change_mode':
-          addHistory({ type: 'command', content: trimmed });
-          setSession(prev => ({ ...prev, mode: action.mode }));
-          addHistory({ type: 'info', content: `Mode changed to ${action.mode}` });
-          break;
-
-        case 'exit':
-          exit();
-          break;
-      }
-      return;
-    }
-
-    // Not a command — parse header and start collecting
+    // Parse header and start collecting
     const parts = trimmed.split(/\s+/);
     if (parts.length < 2) {
       addHistory({ type: 'error', content: 'Header line requires: base_delivery_cost no_of_packages' });
@@ -221,13 +230,8 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
       return;
     }
 
-    setCollectedLines([trimmed]);
-    collectedLinesRef.current = [trimmed];
-    setExpectedPackageCount(packageCount);
-    expectedPackageCountRef.current = packageCount;
-    setIsCollecting(true);
-    isCollectingRef.current = true;
-  }, [addHistory, addToCommandHistory, executeCalculation]);
+    startCollecting(trimmed, packageCount);
+  }, [addHistory, addToCommandHistory, executeCalculation, handleCommand, handleCollectedLine, handlePastedSubmit, startCollecting]);
 
   const getExpectedTotalLines = () => {
     if (!expectedPackageCount) return null;
@@ -238,52 +242,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
 
   return (
     <Box flexDirection="column">
-      {history.map((item, i) => {
-        switch (item.type) {
-          case 'welcome':
-            return <WelcomeScreen key={i} mode={session.mode} />;
-          case 'help':
-            return <HelpScreen key={i} />;
-          case 'input':
-            return (
-              <Box key={i} flexDirection="column" marginTop={1} marginBottom={1}>
-                {item.content.split('\n').map((line, j) => (
-                  <Text key={j} color={colors.dimWhite}>{line}</Text>
-                ))}
-              </Box>
-            );
-          case 'result':
-            return item.data.success ? (
-              <Box key={i} marginTop={1} marginBottom={1}>
-                <ResultCard mode={item.data.mode} results={item.data.results} renamedPackages={item.data.renamedPackages} />
-              </Box>
-            ) : (
-              <Box key={i} marginTop={1} marginBottom={1}>
-                <ErrorDisplay error={item.data.error} />
-              </Box>
-            );
-          case 'info':
-            return (
-              <Box key={i} marginTop={1} marginBottom={1}>
-                <Text color={colors.cyan}>ℹ {item.content}</Text>
-              </Box>
-            );
-          case 'error':
-            return (
-              <Box key={i} marginTop={1} marginBottom={1}>
-                <ErrorDisplay error={item.content} />
-              </Box>
-            );
-          case 'command':
-            return (
-              <Box key={i} marginBottom={1}>
-                <Text color={colors.muted}>❯ {item.content}</Text>
-              </Box>
-            );
-          default:
-            return null;
-        }
-      })}
+      <HistoryRenderer history={history} mode={session.mode} />
 
       <Box marginTop={1} flexDirection="column">
         {isCalculating ? (
