@@ -209,7 +209,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             return <HelpScreen key={i} />;
           case 'input':
             return (
-              <Box key={i} flexDirection="column" marginBottom={1}>
+              <Box key={i} flexDirection="column" marginTop={1} marginBottom={1}>
                 {item.content.split('\n').map((line, j) => (
                   <Text key={j} color={colors.dimWhite}>{line}</Text>
                 ))}
@@ -217,23 +217,23 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             );
           case 'result':
             return item.data.success ? (
-              <Box key={i} marginBottom={1}>
+              <Box key={i} marginTop={1} marginBottom={1}>
                 <ResultCard mode={item.data.mode} results={item.data.results} renamedPackages={item.data.renamedPackages} />
               </Box>
             ) : (
-              <Box key={i} marginBottom={1}>
+              <Box key={i} marginTop={1} marginBottom={1}>
                 <ErrorDisplay error={item.data.error} />
               </Box>
             );
           case 'info':
             return (
-              <Box key={i} marginBottom={1}>
+              <Box key={i} marginTop={1} marginBottom={1}>
                 <Text color={colors.cyan}>ℹ {item.content}</Text>
               </Box>
             );
           case 'error':
             return (
-              <Box key={i} marginBottom={1}>
+              <Box key={i} marginTop={1} marginBottom={1}>
                 <ErrorDisplay error={item.content} />
               </Box>
             );
@@ -248,14 +248,14 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
         }
       })}
 
-      <Box marginTop={1} flexDirection="column">
+      <Box marginTop={2} flexDirection="column">
         <StatusBar
           mode={session.mode}
           transitCount={session.transitPackages.length}
         />
       </Box>
 
-      <Box marginTop={1}>
+      <Box marginTop={2} flexDirection="column">
         {isCalculating ? (
           <Text color={colors.amber}>⏳ Calculating...</Text>
         ) : (
