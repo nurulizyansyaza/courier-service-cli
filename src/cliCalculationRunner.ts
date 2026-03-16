@@ -70,9 +70,17 @@ interface ApiTimeResult {
   deliveryTime?: number;
   vehicleId?: number;
   deliveryRound?: number;
+  packagesRemaining?: number;
+  currentTime?: number;
   vehicleReturnTime?: number;
+  roundTripTime?: number;
   undeliverable?: boolean;
   undeliverableReason?: string;
+  baseCost?: number;
+  weight?: number;
+  distance?: number;
+  offerCode?: string;
+  deliveryCost?: number;
 }
 
 // Parse input to extract package details for enriching API/transit results
@@ -147,15 +155,18 @@ async function fetchFromApi(
           id: r.id,
           discount: r.discount,
           totalCost: r.totalCost,
-          baseCost: d?.baseCost ?? 0,
-          weight: d?.weight ?? 0,
-          distance: d?.distance ?? 0,
-          offerCode: d?.offerCode,
-          deliveryCost: d?.deliveryCost ?? 0,
+          baseCost: r.baseCost ?? d?.baseCost ?? 0,
+          weight: r.weight ?? d?.weight ?? 0,
+          distance: r.distance ?? d?.distance ?? 0,
+          offerCode: r.offerCode ?? d?.offerCode,
+          deliveryCost: r.deliveryCost ?? d?.deliveryCost ?? 0,
           deliveryTime: r.deliveryTime,
           vehicleId: r.vehicleId,
           deliveryRound: r.deliveryRound,
+          packagesRemaining: r.packagesRemaining,
+          currentTime: r.currentTime,
           vehicleReturnTime: r.vehicleReturnTime,
+          roundTripTime: r.roundTripTime,
           undeliverable: r.undeliverable,
           undeliverableReason: r.undeliverableReason,
         };
@@ -216,25 +227,25 @@ function runLocally(
         ? transitResult.renamedPackages
         : undefined;
 
-      // Parse input to enrich transit results with package details
-      const details = extractPackageDetails(input, 'time');
-      const lines = transitResult.output.split('\n').filter(Boolean);
-      const results: PackageResult[] = lines.map((line) => {
-        const parts = line.split(/\s+/);
-        const id = parts[0];
-        const d = details.get(id.toUpperCase());
-        return {
-          id,
-          discount: Number(parts[1]),
-          totalCost: Number(parts[2]),
-          deliveryTime: parts[3] === 'N/A' ? undefined : Number(parts[3]),
-          baseCost: d?.baseCost ?? 0,
-          weight: d?.weight ?? 0,
-          distance: d?.distance ?? 0,
-          offerCode: d?.offerCode,
-          deliveryCost: d?.deliveryCost ?? 0,
-        };
-      });
+      const results: PackageResult[] = transitResult.results.map((r) => ({
+        id: r.id,
+        discount: Math.round(r.discount),
+        totalCost: Math.round(r.totalCost),
+        baseCost: r.baseCost,
+        weight: r.weight,
+        distance: r.distance,
+        offerCode: r.offerCode,
+        deliveryCost: r.deliveryCost,
+        deliveryTime: r.deliveryTime,
+        vehicleId: r.vehicleId,
+        deliveryRound: r.deliveryRound,
+        packagesRemaining: r.packagesRemaining,
+        currentTime: r.currentTime,
+        vehicleReturnTime: r.vehicleReturnTime,
+        roundTripTime: r.roundTripTime,
+        undeliverable: r.undeliverable,
+        undeliverableReason: r.undeliverableReason,
+      }));
       return { success: true, mode: 'time', results, updatedTransit, renamedPackages };
     }
 

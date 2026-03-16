@@ -17,7 +17,10 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
   return (
     <Box flexDirection="column">
       {result.undeliverable && (
-        <Text color={colors.amber}>⚠ {result.undeliverableReason || 'Package cannot be delivered'}</Text>
+        <Box flexDirection="column">
+          <Text color={colors.amber}>📦 In Transit</Text>
+          <Text color={colors.amber}>⚠ {result.undeliverableReason || 'Package cannot be delivered'}</Text>
+        </Box>
       )}
 
       {mode === 'time' && !result.undeliverable && result.deliveryRound != null && result.vehicleId != null && (
@@ -43,7 +46,12 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
       <Box marginTop={1}>
         <Text color={colors.cyan} bold>{result.id}</Text>
         {renamedFrom && (
-          <Text color={colors.muted}> (was {renamedFrom})</Text>
+          <>
+            <Text color={colors.muted}> (was </Text>
+            <Text color={colors.muted} strikethrough>{renamedFrom}</Text>
+            <Text color={colors.muted}>) </Text>
+            <Text color={colors.purple}>Notified</Text>
+          </>
         )}
       </Box>
 
