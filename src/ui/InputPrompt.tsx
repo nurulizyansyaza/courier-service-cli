@@ -12,7 +12,6 @@ interface InputPromptProps {
   onCancel: () => void;
   onEditLine?: (index: number, value: string) => void;
   history: string[];
-  transitCount: number;
 }
 
 export const InputPrompt: React.FC<InputPromptProps> = ({
@@ -25,7 +24,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   onCancel,
   onEditLine,
   history,
-  transitCount,
 }) => {
   const [value, setValue] = useState('');
   const [cursorPos, setCursorPos] = useState(0);
@@ -349,7 +347,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   });
 
   const modeColor = mode === 'cost' ? colors.pink : colors.cyan;
-  const modeLabel = mode === 'cost' ? 'Cost' : 'Time';
 
   const allLines = value.split('\n');
   let cursorLineIndex = 0;
@@ -372,30 +369,24 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         <Text color={colors.muted}>──────────────────────────────────────────────────────────────────────────────────</Text>
       </Box>
 
-      <Box marginBottom={1}>
-        <Text>
-          <Text color={colors.muted}>Mode: </Text>
-          <Text color={modeColor}>{modeLabel}</Text>
-          {isCollecting && expectedLines && (
-            <Text color={colors.muted}> │ Line {currentLine}/{expectedLines}</Text>
-          )}
-          {transitCount > 0 && (
-            <Text>
-              <Text color={colors.muted}> │ Transit: </Text>
-              <Text color={colors.amber}>{transitCount}</Text>
-            </Text>
-          )}
-          {editingLineIndex >= 0 && (
-            <Text color={colors.amber}> │ Editing line {editingLineIndex + 1}</Text>
-          )}
-        </Text>
-      </Box>
+      {(isCollecting || editingLineIndex >= 0) && (
+        <Box marginBottom={1}>
+          <Text>
+            {isCollecting && expectedLines && (
+              <Text color={colors.muted}>Line {currentLine}/{expectedLines}</Text>
+            )}
+            {editingLineIndex >= 0 && (
+              <Text color={colors.amber}>{isCollecting && expectedLines ? ' │ ' : ''}Editing line {editingLineIndex + 1}</Text>
+            )}
+          </Text>
+        </Box>
+      )}
 
       {isCollecting && collectedLines.map((line, i) => (
         <Box key={i}>
           {i === editingLineIndex ? (
             <>
-              <Text color={colors.pink}>{'❯ '}</Text>
+              <Text color={modeColor}>{mode} </Text><Text color={colors.pink}>{'❯ '}</Text>
               <Text>{value.slice(0, cursorPosInLine)}</Text>
               <Text inverse>{cursorPosInLine < value.length ? value[cursorPosInLine] : ' '}</Text>
               <Text>{value.slice(cursorPosInLine + 1)}</Text>
@@ -412,7 +403,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         <Box key={i}>
           {i === cursorLineIndex ? (
             <>
-              <Text color={colors.pink}>{'❯ '}</Text>
+              <Text color={modeColor}>{mode} </Text><Text color={colors.pink}>{'❯ '}</Text>
               <Text>{line.slice(0, cursorPosInLine)}</Text>
               <Text inverse>{cursorPosInLine < line.length ? line[cursorPosInLine] : ' '}</Text>
               <Text>{line.slice(cursorPosInLine + 1)}</Text>
@@ -425,7 +416,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
 
       {((isCollecting && editingLineIndex === -1) || (!isCollecting && allLines.length === 1)) && (
         <Box>
-          <Text color={colors.pink}>{'❯ '}</Text>
+          <Text color={modeColor}>{mode} </Text><Text color={colors.pink}>{'❯ '}</Text>
           <Text>{value.slice(0, cursorPosInLine)}</Text>
           <Text inverse>{cursorPosInLine < value.length ? value[cursorPosInLine] : ' '}</Text>
           <Text>{value.slice(cursorPosInLine + 1)}</Text>

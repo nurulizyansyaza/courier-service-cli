@@ -2,7 +2,6 @@ export type CommandAction =
   | { type: 'change_mode'; mode: 'cost' | 'time' }
   | { type: 'clear' }
   | { type: 'help' }
-  | { type: 'restart' }
   | { type: 'exit' }
   | null;
 
@@ -16,10 +15,6 @@ export function processCommand(input: string): CommandAction {
 
   if (lower === 'help') {
     return { type: 'help' };
-  }
-
-  if (lower === '/restart') {
-    return { type: 'restart' };
   }
 
   if (lower === 'exit' || lower === 'quit') {

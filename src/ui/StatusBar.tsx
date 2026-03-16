@@ -8,18 +8,11 @@ interface StatusBarProps {
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({ mode, transitCount }) => (
-  <Box>
-    <Text>
-      <Text color={colors.muted}>Mode: </Text>
-      <Text color={mode === 'cost' ? colors.pink : colors.cyan} bold>
-        {mode}
-      </Text>
-      {transitCount > 0 && (
-        <Text>
-          <Text color={colors.muted}> │ </Text>
-          <Text color={colors.amber}>📦 {transitCount} in transit</Text>
-        </Text>
-      )}
-    </Text>
-  </Box>
+  <>
+    {transitCount > 0 && (
+      <Box>
+        <Text color={colors.amber}>📦 {transitCount} in transit</Text>
+      </Box>
+    )}
+  </>
 );

@@ -26,8 +26,8 @@ interface AppProps {
 }
 
 export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
-  const { write: writeStdout } = useStdout();
   const { exit } = useApp();
+  const { write: writeStdout } = useStdout();
 
   const [session, setSession] = useState<SessionData>(() => {
     const loaded = loadSession();
@@ -153,17 +153,13 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
 
       switch (action.type) {
         case 'clear':
-          writeStdout('\x1B[2J\x1B[H');
-          setHistory([]);
+          writeStdout('\x1B[2J\x1B[3J\x1B[H');
+          setHistory([{ type: 'welcome' }]);
           break;
 
         case 'help':
           addHistory({ type: 'command', content: trimmed });
           addHistory({ type: 'help' });
-          break;
-
-        case 'restart':
-          setHistory([{ type: 'welcome' }]);
           break;
 
         case 'change_mode':
@@ -257,6 +253,13 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
       })}
 
       <Box marginTop={2} flexDirection="column">
+        <StatusBar
+          mode={session.mode}
+          transitCount={session.transitPackages.length}
+        />
+      </Box>
+
+      <Box marginTop={2} flexDirection="column">
         {isCalculating ? (
           <Text color={colors.amber}>⏳ Calculating...</Text>
         ) : (
@@ -270,7 +273,6 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             onCancel={handleCancelInput}
             onEditLine={handleEditLine}
             history={commandHistory}
-            transitCount={session.transitPackages.length}
           />
         )}
       </Box>
