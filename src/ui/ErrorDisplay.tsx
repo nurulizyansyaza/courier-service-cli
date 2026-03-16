@@ -12,9 +12,11 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ error }) => {
   return (
     <Box paddingLeft={0} flexDirection="column" marginBottom={1}>
       {lines.map((line, i) => (
-        <Text key={i} color={colors.red}>
-          {lines.length > 1 ? `• ${line}` : line}
-        </Text>
+        <Box key={i} flexDirection="column" marginBottom={i < lines.length - 1 ? 1 : 0}>
+          <Text color={colors.red}>
+            {lines.length > 1 ? `• ${line}` : line}
+          </Text>
+        </Box>
       ))}
     </Box>
   );
