@@ -93,6 +93,20 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push/PR to `main`:
 
 Requires a `DEPLOY_TRIGGER_TOKEN` secret (fine-grained PAT with Actions + Contents write access on the `courier-service` repo).
 
+## CLI Flow
+
+```mermaid
+graph LR
+    Stdin["stdin"] --> IO["io.ts<br/>readStdin()"]
+    IO --> CLI["cli.ts<br/>Commander.js"]
+    CLI -->|"cost"| Cost["commands.ts<br/>runCost()"]
+    CLI -->|"delivery"| Delivery["commands.ts<br/>runDelivery()"]
+    Cost --> Core["@courier-service-core<br/>calculateDeliveryCost"]
+    Delivery --> Core2["@courier-service-core<br/>calculateDeliveryTime"]
+    Core --> Stdout["stdout"]
+    Core2 --> Stdout
+```
+
 ## Project Structure
 
 ```
