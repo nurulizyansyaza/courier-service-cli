@@ -138,6 +138,11 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
 
   const modeColor = mode === 'cost' ? colors.pink : colors.cyan;
 
+  // For multi-line history entries, show first line + indicator
+  const displayValue = value.includes('\n')
+    ? `${value.split('\n')[0]} ... (${value.split('\n').length} lines)`
+    : value;
+
   if (isCollecting) {
     const lineLabel = expectedLines
       ? `Line ${currentLine}/${expectedLines}`
@@ -147,7 +152,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       <Box>
         <Text color={colors.muted}>{lineLabel} </Text>
         <Text color={modeColor}>❯ </Text>
-        <Text>{value}</Text>
+        <Text>{displayValue}</Text>
         <Text color={colors.muted}>█</Text>
       </Box>
     );
@@ -158,7 +163,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       <Box>
         <Text color={modeColor} bold>[{mode}]</Text>
         <Text color={modeColor}> ❯ </Text>
-        <Text>{value}</Text>
+        <Text>{displayValue}</Text>
         <Text color={colors.muted}>█</Text>
       </Box>
       <Box marginTop={1}>

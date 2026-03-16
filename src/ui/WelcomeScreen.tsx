@@ -45,7 +45,7 @@ interface WelcomeScreenProps {
 }
 
 export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ mode }) => (
-  <Box flexDirection="column" marginBottom={1}>
+  <Box flexDirection="column">
     <Text color={colors.pink} bold>Welcome to Courier CLI!</Text>
     <Text color={colors.muted}>Calculate delivery costs and optimize delivery times with real time package tracking</Text>
 

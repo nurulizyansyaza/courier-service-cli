@@ -8,7 +8,7 @@ interface StatusBarProps {
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({ mode, transitCount }) => (
-  <Box marginBottom={1}>
+  <Box>
     <Text>
       <Text color={colors.muted}>Mode: </Text>
       <Text color={mode === 'cost' ? colors.pink : colors.cyan} bold>

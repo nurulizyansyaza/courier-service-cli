@@ -15,22 +15,20 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
     : '0';
 
   return (
-    <Box flexDirection="column" marginBottom={1}>
-      {/* Undeliverable banner */}
+    <Box flexDirection="column">
       {result.undeliverable && (
-        <Text color={colors.amber}>  ⚠ {result.undeliverableReason || 'Package cannot be delivered'}</Text>
+        <Text color={colors.amber}>⚠ {result.undeliverableReason || 'Package cannot be delivered'}</Text>
       )}
 
-      {/* Vehicle/Round info header (time mode) */}
       {mode === 'time' && result.vehicleId != null && (
         <Box flexDirection="column">
           <Text color={colors.muted}>
-            {'  '}Delivery Round {result.deliveryRound} • Vehicle {result.vehicleId}
+            Delivery Round {result.deliveryRound} • Vehicle {result.vehicleId}
             {result.packagesRemaining != null && ` • ${result.packagesRemaining} pkg remaining`}
           </Text>
           {result.currentTime != null && (
             <Text color={colors.muted}>
-              {'  '}Current Time: {result.currentTime.toFixed(2)}hrs
+              Current Time: {result.currentTime.toFixed(2)}hrs
               {result.vehicleReturnTime != null && ` • Return: ${result.vehicleReturnTime.toFixed(2)}hrs`}
               {result.roundTripTime != null && ` • Round Trip: ${result.roundTripTime.toFixed(2)}hrs`}
             </Text>
@@ -38,28 +36,22 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
         </Box>
       )}
 
-      {/* Package ID */}
       <Box>
-        <Text color={colors.cyan} bold>  {result.id}</Text>
+        <Text color={colors.cyan} bold>{result.id}</Text>
         {renamedFrom && (
           <Text color={colors.muted}> (was {renamedFrom})</Text>
         )}
       </Box>
 
-      {/* Details */}
-      <Box paddingLeft={4} flexDirection="column">
-        {/* Base cost, Weight, Distance, Offer */}
+      <Box flexDirection="column" marginLeft={2}>
         {result.baseCost > 0 && (
           <>
             <Text>
-              <Text color={colors.dimWhite}>Base Cost: </Text>
-              <Text color={colors.dimWhite}>{result.baseCost}</Text>
-              <Text color={colors.muted}>{' | '}</Text>
-              <Text color={colors.dimWhite}>Weight: </Text>
-              <Text color={colors.dimWhite}>{result.weight}kg</Text>
-              <Text color={colors.muted}>{' | '}</Text>
-              <Text color={colors.dimWhite}>Distance: </Text>
-              <Text color={colors.dimWhite}>{result.distance}km</Text>
+              <Text color={colors.dimWhite}>Base Cost: {result.baseCost}</Text>
+              <Text color={colors.muted}> | </Text>
+              <Text color={colors.dimWhite}>Weight: {result.weight}kg</Text>
+              <Text color={colors.muted}> | </Text>
+              <Text color={colors.dimWhite}>Distance: {result.distance}km</Text>
             </Text>
             {result.offerCode && (
               <Text>
@@ -67,8 +59,6 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
                 <Text color={colors.emerald}>{result.offerCode.toUpperCase()}</Text>
               </Text>
             )}
-
-            {/* Delivery Cost formula */}
             <Text>
               <Text color={colors.dimWhite}>Delivery Cost: </Text>
               <Text color={colors.muted}>
@@ -78,7 +68,6 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
           </>
         )}
 
-        {/* Discount */}
         <Text>
           <Text color={colors.dimWhite}>Discount: </Text>
           {result.discount > 0 ? (
@@ -88,12 +77,10 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
           )}
         </Text>
 
-        {/* Total Cost */}
         <Text>
           <Text color={colors.pink} bold>Total Cost: {result.totalCost}</Text>
         </Text>
 
-        {/* Delivery Time (time mode) */}
         {mode === 'time' && result.deliveryTime != null && (
           <Text>
             <Text color={colors.dimWhite}>Delivery Time: </Text>
@@ -113,7 +100,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ mode, results, renamedPa
   }
 
   return (
-    <Box flexDirection="column" marginBottom={1}>
+    <Box flexDirection="column">
       <Text color={colors.muted}>─────────────────────────────────────────</Text>
       {results.map((r) => (
         <PackageRow

@@ -38,6 +38,7 @@ program
         initialApiUrl: opts.local ? undefined : opts.apiUrl,
         localOnly: opts.local,
       }),
+      { exitOnCtrlC: false },
     );
   });
 

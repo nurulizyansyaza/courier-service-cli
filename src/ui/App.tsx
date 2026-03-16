@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Text, useInput } from 'ink';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { Box, Text, useStdout } from 'ink';
 import { colors } from './theme';
 import { WelcomeScreen } from './WelcomeScreen';
 import { HelpScreen } from './HelpScreen';
@@ -26,6 +26,8 @@ interface AppProps {
 }
 
 export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
+  const { write: writeStdout } = useStdout();
+
   const [session, setSession] = useState<SessionData>(() => {
     const loaded = loadSession();
     if (localOnly) loaded.apiUrl = null;
@@ -36,18 +38,25 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   const [history, setHistory] = useState<HistoryItem[]>([{ type: 'welcome' }]);
   const [commandHistory, setCommandHistory] = useState<string[]>(session.commandHistory);
 
-  // Multi-line input collection state
   const [isCollecting, setIsCollecting] = useState(false);
   const [collectedLines, setCollectedLines] = useState<string[]>([]);
   const [expectedPackageCount, setExpectedPackageCount] = useState<number | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // Save session on state changes
+  // Refs for values needed in callbacks to avoid stale closures
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
+  const commandHistoryRef = useRef(commandHistory);
+  commandHistoryRef.current = commandHistory;
+  const isCollectingRef = useRef(isCollecting);
+  isCollectingRef.current = isCollecting;
+  const collectedLinesRef = useRef(collectedLines);
+  collectedLinesRef.current = collectedLines;
+  const expectedPackageCountRef = useRef(expectedPackageCount);
+  expectedPackageCountRef.current = expectedPackageCount;
+
   useEffect(() => {
-    saveSession({
-      ...session,
-      commandHistory,
-    });
+    saveSession({ ...session, commandHistory });
   }, [session, commandHistory]);
 
   const addHistory = useCallback((item: HistoryItem) => {
@@ -68,30 +77,97 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     setIsCalculating(true);
     addHistory({ type: 'input', content: fullInput });
 
-    const result = await runCalculation(
-      fullInput,
-      session.mode,
-      session.apiUrl,
-      session.transitPackages,
-    );
+    const s = sessionRef.current;
+    const result = await runCalculation(fullInput, s.mode, s.apiUrl, s.transitPackages);
 
     addHistory({ type: 'result', data: result });
 
     if (result.success && result.mode === 'time' && result.updatedTransit) {
       setSession(prev => ({ ...prev, transitPackages: result.updatedTransit! }));
       if (result.renamedPackages && result.renamedPackages.length > 0) {
-        const renames = result.renamedPackages
-          .map(r => `${r.oldId} → ${r.newId}`)
-          .join(', ');
+        const renames = result.renamedPackages.map(r => `${r.oldId} → ${r.newId}`).join(', ');
         addHistory({ type: 'info', content: `Renamed packages: ${renames}` });
       }
     }
 
     setIsCalculating(false);
-  }, [session, addHistory]);
+  }, [addHistory]);
 
-  const handleHeaderLine = useCallback((line: string) => {
-    const parts = line.trim().split(/\s+/);
+  const handleCancelInput = useCallback(() => {
+    if (isCollectingRef.current) {
+      setIsCollecting(false);
+      setCollectedLines([]);
+      setExpectedPackageCount(null);
+      addHistory({ type: 'info', content: 'Input cancelled' });
+    }
+  }, [addHistory]);
+
+  const handleSubmit = useCallback((value: string) => {
+    const trimmed = value.trim();
+    if (!trimmed) return;
+
+    // If currently collecting multi-line input
+    if (isCollectingRef.current) {
+      const newLines = [...collectedLinesRef.current, trimmed];
+      setCollectedLines(newLines);
+      collectedLinesRef.current = newLines;
+
+      const mode = sessionRef.current.mode;
+      const pkgCount = expectedPackageCountRef.current!;
+      const totalExpected = mode === 'cost' ? pkgCount + 1 : pkgCount + 2;
+
+      if (newLines.length >= totalExpected) {
+        setIsCollecting(false);
+        isCollectingRef.current = false;
+        setCollectedLines([]);
+        collectedLinesRef.current = [];
+        setExpectedPackageCount(null);
+        expectedPackageCountRef.current = null;
+        const fullInput = newLines.join('\n');
+        addToCommandHistory(fullInput);
+        executeCalculation(fullInput);
+      }
+      return;
+    }
+
+    // If input contains newlines (e.g. from history), execute directly
+    if (trimmed.includes('\n')) {
+      addToCommandHistory(trimmed);
+      executeCalculation(trimmed);
+      return;
+    }
+
+    // Check if it's a command
+    const action = processCommand(trimmed);
+    if (action) {
+      addToCommandHistory(trimmed);
+
+      switch (action.type) {
+        case 'clear':
+          writeStdout('\x1B[2J\x1B[H');
+          setHistory([]);
+          break;
+
+        case 'help':
+          addHistory({ type: 'command', content: trimmed });
+          addHistory({ type: 'help' });
+          break;
+
+        case 'restart':
+          setHistory([{ type: 'welcome' }]);
+          break;
+
+        case 'change_mode':
+          addHistory({ type: 'command', content: trimmed });
+          setSession(prev => ({ ...prev, mode: action.mode }));
+          addHistory({ type: 'info', content: `Mode changed to ${action.mode}` });
+          break;
+      }
+      return;
+    }
+
+    // Not a command — parse header and start collecting
+    const parts = trimmed.split(/\s+/);
     if (parts.length < 2) {
       addHistory({ type: 'error', content: 'Header line requires: base_delivery_cost no_of_packages' });
       return;
@@ -103,80 +179,13 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
       return;
     }
 
-    setCollectedLines([line.trim()]);
+    setCollectedLines([trimmed]);
+    collectedLinesRef.current = [trimmed];
     setExpectedPackageCount(packageCount);
+    expectedPackageCountRef.current = packageCount;
     setIsCollecting(true);
-  }, [addHistory]);
-
-  const handleCollectedLine = useCallback((line: string) => {
-    const newLines = [...collectedLines, line.trim()];
-    setCollectedLines(newLines);
-
-    const totalExpected = session.mode === 'cost'
-      ? (expectedPackageCount! + 1)   // header + packages
-      : (expectedPackageCount! + 2);  // header + packages + fleet
-
-    if (newLines.length >= totalExpected) {
-      setIsCollecting(false);
-      setCollectedLines([]);
-      setExpectedPackageCount(null);
-      const fullInput = newLines.join('\n');
-      addToCommandHistory(fullInput);
-      executeCalculation(fullInput);
-    }
-  }, [collectedLines, expectedPackageCount, session.mode, addToCommandHistory, executeCalculation]);
-
-  const handleCancelInput = useCallback(() => {
-    if (isCollecting) {
-      setIsCollecting(false);
-      setCollectedLines([]);
-      setExpectedPackageCount(null);
-      addHistory({ type: 'info', content: 'Input cancelled' });
-    }
-  }, [isCollecting, addHistory]);
-
-  const handleSubmit = useCallback((value: string) => {
-    const trimmed = value.trim();
-    if (!trimmed) return;
-
-    if (isCollecting) {
-      handleCollectedLine(trimmed);
-      return;
-    }
-
-    // Check if it's a command
-    const action = processCommand(trimmed);
-    if (action) {
-      addToCommandHistory(trimmed);
-      addHistory({ type: 'command', content: trimmed });
-
-      switch (action.type) {
-        case 'clear':
-          setHistory([]);
-          break;
-
-        case 'help':
-          addHistory({ type: 'help' });
-          break;
-
-        case 'restart':
-          setHistory([{ type: 'welcome' }]);
-          break;
-
-        case 'change_mode':
-          setSession(prev => ({ ...prev, mode: action.mode }));
-          addHistory({
-            type: 'info',
-            content: `Mode changed to ${action.mode}`,
-          });
-          break;
-      }
-      return;
-    }
-
-    // Not a command — start collecting multi-line input
-    handleHeaderLine(trimmed);
-  }, [isCollecting, addHistory, addToCommandHistory, handleHeaderLine, handleCollectedLine]);
+    isCollectingRef.current = true;
+  }, [addHistory, addToCommandHistory, executeCalculation]);
 
   const getExpectedTotalLines = () => {
     if (!expectedPackageCount) return null;
@@ -186,7 +195,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   };
 
   return (
-    <Box flexDirection="column" paddingX={1}>
+    <Box flexDirection="column">
       {history.map((item, i) => {
         switch (item.type) {
           case 'welcome':
@@ -197,7 +206,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             return (
               <Box key={i} flexDirection="column">
                 {item.content.split('\n').map((line, j) => (
-                  <Text key={j} color={colors.dimWhite}>  {line}</Text>
+                  <Text key={j} color={colors.dimWhite}>{line}</Text>
                 ))}
               </Box>
             );
@@ -209,7 +218,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             );
           case 'info':
             return (
-              <Box key={i} marginBottom={1}>
+              <Box key={i}>
                 <Text color={colors.cyan}>ℹ {item.content}</Text>
               </Box>
             );
