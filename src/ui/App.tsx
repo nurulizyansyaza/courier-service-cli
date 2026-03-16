@@ -252,14 +252,14 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
         }
       })}
 
-      <Box marginTop={2} flexDirection="column">
+      <Box marginTop={1} flexDirection="column">
         <StatusBar
           mode={session.mode}
           transitCount={session.transitPackages.length}
         />
       </Box>
 
-      <Box marginTop={2} flexDirection="column">
+      <Box marginTop={1} flexDirection="column">
         {isCalculating ? (
           <Text color={colors.amber}>⏳ Calculating...</Text>
         ) : (
