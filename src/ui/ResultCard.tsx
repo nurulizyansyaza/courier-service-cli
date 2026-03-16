@@ -20,17 +20,21 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
         <Text color={colors.amber}>⚠ {result.undeliverableReason || 'Package cannot be delivered'}</Text>
       )}
 
-      {mode === 'time' && result.vehicleId != null && (
+      {mode === 'time' && !result.undeliverable && result.deliveryRound != null && result.vehicleId != null && (
         <Box flexDirection="column">
-          <Text color={colors.muted}>
-            Delivery Round {result.deliveryRound} • Vehicle {result.vehicleId}
-            {result.packagesRemaining != null && ` • ${result.packagesRemaining} pkg remaining`}
+          <Text color={colors.muted}>Packages Remaining: <Text color={colors.dimWhite}>{result.packagesRemaining ?? 0}</Text></Text>
+          <Text>
+            <Text color={colors.purple}>Delivery Round: <Text bold>{result.deliveryRound}</Text></Text>
+            <Text color={colors.muted}> | </Text>
+            <Text color={colors.cyan}>Vehicle Available: <Text bold>Vehicle{result.vehicleId}</Text></Text>
+            <Text color={colors.muted}> | </Text>
+            <Text color={colors.muted}>Current Time: <Text color={colors.dimWhite}>{(result.currentTime ?? 0).toFixed(2)} hrs</Text></Text>
           </Text>
-          {result.currentTime != null && (
-            <Text color={colors.muted}>
-              Current Time: {result.currentTime.toFixed(2)}hrs
-              {result.vehicleReturnTime != null && ` • Return: ${result.vehicleReturnTime.toFixed(2)}hrs`}
-              {result.roundTripTime != null && ` • Round Trip: ${result.roundTripTime.toFixed(2)}hrs`}
+          {result.vehicleReturnTime != null && (
+            <Text color={colors.amber}>
+              {result.currentTime != null && result.currentTime > 0
+                ? `Vehicle${result.vehicleId} will be available after ${result.currentTime.toFixed(2)} + ${(result.roundTripTime ?? 0).toFixed(2)} = ${result.vehicleReturnTime.toFixed(2)} hrs`
+                : `Vehicle${result.vehicleId} will be available after ${result.vehicleReturnTime.toFixed(2)} hrs`}
             </Text>
           )}
         </Box>
@@ -81,11 +85,16 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
           <Text color={colors.pink} bold>Total Cost: {result.totalCost}</Text>
         </Text>
 
-        {mode === 'time' && result.deliveryTime != null && (
+        {mode === 'time' && (
           <Text>
             <Text color={colors.dimWhite}>Delivery Time: </Text>
-            <Text color={colors.cyan} bold>{result.deliveryTime.toFixed(2)}</Text>
-            <Text color={colors.muted}> hrs</Text>
+            {result.undeliverable ? (
+              <Text color={colors.muted}>N/A</Text>
+            ) : result.deliveryTime != null ? (
+              <><Text color={colors.cyan} bold>{result.deliveryTime.toFixed(2)}</Text><Text color={colors.muted}> hrs</Text></>
+            ) : (
+              <Text color={colors.muted}>N/A</Text>
+            )}
           </Text>
         )}
       </Box>
