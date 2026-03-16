@@ -31,9 +31,14 @@ describe('processCommand', () => {
   test('non-command input returns null', () => {
     expect(processCommand('100 3')).toBeNull();
     expect(processCommand('PKG1 5 5 OFR001')).toBeNull();
-    expect(processCommand('exit')).toBeNull();
     expect(processCommand('/connect')).toBeNull();
     expect(processCommand('/disconnect')).toBeNull();
+  });
+
+  test('exit command', () => {
+    expect(processCommand('exit')).toEqual({ type: 'exit' });
+    expect(processCommand('EXIT')).toEqual({ type: 'exit' });
+    expect(processCommand('quit')).toEqual({ type: 'exit' });
   });
 
   test('trims whitespace', () => {
@@ -48,11 +53,11 @@ describe('isCommand', () => {
     expect(isCommand('clear')).toBe(true);
     expect(isCommand('/change mode cost')).toBe(true);
     expect(isCommand('/restart')).toBe(true);
+    expect(isCommand('exit')).toBe(true);
   });
 
   test('returns false for non-commands', () => {
     expect(isCommand('100 3')).toBe(false);
     expect(isCommand('PKG1 5 5 OFR001')).toBe(false);
-    expect(isCommand('exit')).toBe(false);
   });
 });

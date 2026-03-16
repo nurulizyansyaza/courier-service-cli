@@ -3,6 +3,7 @@ export type CommandAction =
   | { type: 'clear' }
   | { type: 'help' }
   | { type: 'restart' }
+  | { type: 'exit' }
   | null;
 
 export function processCommand(input: string): CommandAction {
@@ -19,6 +20,10 @@ export function processCommand(input: string): CommandAction {
 
   if (lower === '/restart') {
     return { type: 'restart' };
+  }
+
+  if (lower === 'exit' || lower === 'quit') {
+    return { type: 'exit' };
   }
 
   if (lower.startsWith('/change mode')) {

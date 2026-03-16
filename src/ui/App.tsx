@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Box, Text, useStdout } from 'ink';
+import { Box, Text, useStdout, useApp } from 'ink';
 import { colors } from './theme';
 import { WelcomeScreen } from './WelcomeScreen';
 import { HelpScreen } from './HelpScreen';
@@ -27,6 +27,7 @@ interface AppProps {
 
 export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   const { write: writeStdout } = useStdout();
+  const { exit } = useApp();
 
   const [session, setSession] = useState<SessionData>(() => {
     const loaded = loadSession();
@@ -162,6 +163,10 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
           setSession(prev => ({ ...prev, mode: action.mode }));
           addHistory({ type: 'info', content: `Mode changed to ${action.mode}` });
           break;
+
+        case 'exit':
+          exit();
+          break;
       }
       return;
     }
@@ -235,10 +240,12 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
         }
       })}
 
-      <StatusBar
-        mode={session.mode}
-        transitCount={session.transitPackages.length}
-      />
+      <Box marginTop={1}>
+        <StatusBar
+          mode={session.mode}
+          transitCount={session.transitPackages.length}
+        />
+      </Box>
 
       {isCalculating ? (
         <Box>

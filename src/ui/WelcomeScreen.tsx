@@ -73,10 +73,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ mode }) => (
     </Box>
 
     <Box marginTop={1} flexDirection="column">
-      <Text color={colors.muted}>─────────────────────────────────────────</Text>
-    </Box>
-
-    <Box marginTop={1} flexDirection="column">
       <Text color={colors.pink}>Input Format:</Text>
       <Text color={colors.dimWhite}>  Line 1: <Text color={colors.muted}>base_delivery_cost no_of_packages</Text></Text>
       <Text color={colors.dimWhite}>  Line 2+: <Text color={colors.muted}>pkg_id weight_kg distance_km offer_code</Text></Text>
@@ -107,6 +103,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ mode }) => (
       <Text>  <Text color={colors.amber}>clear</Text> <Text color={colors.muted}>- Clear screen</Text></Text>
       <Text>  <Text color={colors.cyan}>/restart</Text> <Text color={colors.muted}>- Show welcome screen again</Text></Text>
       <Text>  <Text color={colors.cyan}>help</Text> <Text color={colors.muted}>- Show available commands</Text></Text>
+      <Text>  <Text color={colors.red}>exit</Text> <Text color={colors.muted}>- Exit the CLI</Text></Text>
       <Text>  <Text color={colors.muted}>↑ / ↓</Text> <Text color={colors.muted}>- Navigate command history</Text></Text>
       <Text>  <Text color={colors.muted}>Ctrl+C</Text> <Text color={colors.muted}>- Cancel current input</Text></Text>
     </Box>
