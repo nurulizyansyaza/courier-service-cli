@@ -36,14 +36,14 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
         </Box>
       )}
 
-      <Box>
+      <Box marginTop={1}>
         <Text color={colors.cyan} bold>{result.id}</Text>
         {renamedFrom && (
           <Text color={colors.muted}> (was {renamedFrom})</Text>
         )}
       </Box>
 
-      <Box flexDirection="column" marginLeft={2}>
+      <Box flexDirection="column" marginBottom={1}>
         {result.baseCost > 0 && (
           <>
             <Text>

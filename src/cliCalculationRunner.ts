@@ -75,6 +75,27 @@ interface ApiTimeResult {
   undeliverableReason?: string;
 }
 
+// Parse input to extract package details for enriching API/transit results
+function extractPackageDetails(input: string, mode: 'cost' | 'time') {
+  try {
+    const { baseCost, packages } = parseInput(input, mode);
+    const detailMap = new Map<string, { baseCost: number; weight: number; distance: number; offerCode?: string; deliveryCost: number }>();
+    for (const pkg of packages) {
+      const deliveryCost = baseCost + pkg.weight * 10 + pkg.distance * 5;
+      detailMap.set(pkg.id.toUpperCase(), {
+        baseCost,
+        weight: pkg.weight,
+        distance: pkg.distance,
+        offerCode: pkg.offerCode,
+        deliveryCost,
+      });
+    }
+    return detailMap;
+  } catch {
+    return new Map();
+  }
+}
+
 async function fetchFromApi(
   input: string,
   mode: 'cost' | 'time',
@@ -100,29 +121,45 @@ async function fetchFromApi(
       return null;
     }
 
+    const details = extractPackageDetails(input, mode);
+
     if (mode === 'cost') {
       const data = await res.json() as { results: ApiCostResult[] };
-      const results: PackageResult[] = data.results.map((r) => ({
-        id: r.id,
-        discount: r.discount,
-        totalCost: r.cost,
-        baseCost: 0, weight: 0, distance: 0, deliveryCost: 0,
-      }));
+      const results: PackageResult[] = data.results.map((r) => {
+        const d = details.get(r.id.toUpperCase());
+        return {
+          id: r.id,
+          discount: r.discount,
+          totalCost: r.cost,
+          baseCost: d?.baseCost ?? 0,
+          weight: d?.weight ?? 0,
+          distance: d?.distance ?? 0,
+          offerCode: d?.offerCode,
+          deliveryCost: d?.deliveryCost ?? 0,
+        };
+      });
       return { success: true, mode: 'cost', results };
     } else {
       const data = await res.json() as ApiTimeData;
-      const results: PackageResult[] = data.results.map((r) => ({
-        id: r.id,
-        discount: r.discount,
-        totalCost: r.totalCost,
-        baseCost: 0, weight: 0, distance: 0, deliveryCost: 0,
-        deliveryTime: r.deliveryTime,
-        vehicleId: r.vehicleId,
-        deliveryRound: r.deliveryRound,
-        vehicleReturnTime: r.vehicleReturnTime,
-        undeliverable: r.undeliverable,
-        undeliverableReason: r.undeliverableReason,
-      }));
+      const results: PackageResult[] = data.results.map((r) => {
+        const d = details.get(r.id.toUpperCase());
+        return {
+          id: r.id,
+          discount: r.discount,
+          totalCost: r.totalCost,
+          baseCost: d?.baseCost ?? 0,
+          weight: d?.weight ?? 0,
+          distance: d?.distance ?? 0,
+          offerCode: d?.offerCode,
+          deliveryCost: d?.deliveryCost ?? 0,
+          deliveryTime: r.deliveryTime,
+          vehicleId: r.vehicleId,
+          deliveryRound: r.deliveryRound,
+          vehicleReturnTime: r.vehicleReturnTime,
+          undeliverable: r.undeliverable,
+          undeliverableReason: r.undeliverableReason,
+        };
+      });
       const updatedTransit: TransitPackage[] = [
         ...(data.stillInTransit || []),
         ...(data.newTransitPackages || []),
@@ -179,15 +216,23 @@ function runLocally(
         ? transitResult.renamedPackages
         : undefined;
 
+      // Parse input to enrich transit results with package details
+      const details = extractPackageDetails(input, 'time');
       const lines = transitResult.output.split('\n').filter(Boolean);
       const results: PackageResult[] = lines.map((line) => {
         const parts = line.split(/\s+/);
+        const id = parts[0];
+        const d = details.get(id.toUpperCase());
         return {
-          id: parts[0],
+          id,
           discount: Number(parts[1]),
           totalCost: Number(parts[2]),
           deliveryTime: parts[3] === 'N/A' ? undefined : Number(parts[3]),
-          baseCost: 0, weight: 0, distance: 0, deliveryCost: 0,
+          baseCost: d?.baseCost ?? 0,
+          weight: d?.weight ?? 0,
+          distance: d?.distance ?? 0,
+          offerCode: d?.offerCode,
+          deliveryCost: d?.deliveryCost ?? 0,
         };
       });
       return { success: true, mode: 'time', results, updatedTransit, renamedPackages };

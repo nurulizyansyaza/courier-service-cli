@@ -209,7 +209,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             return <HelpScreen key={i} />;
           case 'input':
             return (
-              <Box key={i} flexDirection="column">
+              <Box key={i} flexDirection="column" marginBottom={1}>
                 {item.content.split('\n').map((line, j) => (
                   <Text key={j} color={colors.dimWhite}>{line}</Text>
                 ))}
@@ -217,21 +217,29 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             );
           case 'result':
             return item.data.success ? (
-              <ResultCard key={i} mode={item.data.mode} results={item.data.results} renamedPackages={item.data.renamedPackages} />
+              <Box key={i} marginBottom={1}>
+                <ResultCard mode={item.data.mode} results={item.data.results} renamedPackages={item.data.renamedPackages} />
+              </Box>
             ) : (
-              <ErrorDisplay key={i} error={item.data.error} />
+              <Box key={i} marginBottom={1}>
+                <ErrorDisplay error={item.data.error} />
+              </Box>
             );
           case 'info':
             return (
-              <Box key={i}>
+              <Box key={i} marginBottom={1}>
                 <Text color={colors.cyan}>ℹ {item.content}</Text>
               </Box>
             );
           case 'error':
-            return <ErrorDisplay key={i} error={item.content} />;
+            return (
+              <Box key={i} marginBottom={1}>
+                <ErrorDisplay error={item.content} />
+              </Box>
+            );
           case 'command':
             return (
-              <Box key={i}>
+              <Box key={i} marginBottom={1}>
                 <Text color={colors.muted}>❯ {item.content}</Text>
               </Box>
             );
@@ -240,28 +248,28 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
         }
       })}
 
-      <Box marginTop={1}>
+      <Box marginTop={1} flexDirection="column">
         <StatusBar
           mode={session.mode}
           transitCount={session.transitPackages.length}
         />
       </Box>
 
-      {isCalculating ? (
-        <Box>
+      <Box marginTop={1}>
+        {isCalculating ? (
           <Text color={colors.amber}>⏳ Calculating...</Text>
-        </Box>
-      ) : (
-        <InputPrompt
-          mode={session.mode}
-          isCollecting={isCollecting}
-          currentLine={collectedLines.length + 1}
-          expectedLines={getExpectedTotalLines()}
-          onSubmit={handleSubmit}
-          onCancel={handleCancelInput}
-          history={commandHistory}
-        />
-      )}
+        ) : (
+          <InputPrompt
+            mode={session.mode}
+            isCollecting={isCollecting}
+            currentLine={collectedLines.length + 1}
+            expectedLines={getExpectedTotalLines()}
+            onSubmit={handleSubmit}
+            onCancel={handleCancelInput}
+            history={commandHistory}
+          />
+        )}
+      </Box>
     </Box>
   );
 };
