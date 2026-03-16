@@ -60,7 +60,7 @@ interface ApiTimeData {
   results: ApiTimeResult[];
   stillInTransit?: TransitPackage[];
   newTransitPackages?: TransitPackage[];
-  renamedPackages?: Record<string, string>;
+  renamedPackages?: { oldId: string; newId: string }[];
 }
 
 interface ApiTimeResult {
@@ -175,10 +175,10 @@ async function fetchFromApi(
         ...(data.stillInTransit || []),
         ...(data.newTransitPackages || []),
       ];
-      const renamedPackages = data.renamedPackages
-        ? Object.entries(data.renamedPackages).map(([oldId, newId]) => ({
-            oldId,
-            newId,
+      const renamedPackages = data.renamedPackages && data.renamedPackages.length > 0
+        ? data.renamedPackages.map((r: { oldId: string; newId: string }) => ({
+            oldId: r.oldId,
+            newId: r.newId,
           }))
         : undefined;
       return { success: true, mode: 'time', results, updatedTransit, renamedPackages };

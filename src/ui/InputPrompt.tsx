@@ -7,9 +7,11 @@ interface InputPromptProps {
   isCollecting: boolean;
   currentLine: number;
   expectedLines: number | null;
+  collectedLines: string[];
   onSubmit: (value: string) => void;
   onCancel: () => void;
   history: string[];
+  transitCount: number;
 }
 
 export const InputPrompt: React.FC<InputPromptProps> = ({
@@ -17,15 +19,16 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   isCollecting,
   currentLine,
   expectedLines,
+  collectedLines,
   onSubmit,
   onCancel,
   history,
+  transitCount,
 }) => {
   const [value, setValue] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [draft, setDraft] = useState('');
 
-  // Use refs to avoid stale closures in useInput callback
   const valueRef = useRef(value);
   valueRef.current = value;
   const historyIndexRef = useRef(historyIndex);
@@ -45,7 +48,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
     const currentDraft = draftRef.current;
     const currentHistory = historyRef.current;
 
-    // Ctrl+C — cancel current multi-line collection or clear input
     if (key.ctrl && input === 'c') {
       setValue('');
       valueRef.current = '';
@@ -57,7 +59,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       return;
     }
 
-    // Enter — submit
     if (key.return) {
       const submitted = currentValue;
       setValue('');
@@ -70,7 +71,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       return;
     }
 
-    // Up arrow — navigate history
     if (key.upArrow && currentHistory.length > 0) {
       const newIndex = currentHistoryIndex === -1
         ? currentHistory.length - 1
@@ -87,7 +87,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       return;
     }
 
-    // Down arrow — navigate history
     if (key.downArrow && currentHistoryIndex !== -1) {
       const newIndex = currentHistoryIndex + 1;
       if (newIndex >= currentHistory.length) {
@@ -104,7 +103,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       return;
     }
 
-    // Backspace — delete last character
     if (key.backspace || key.delete) {
       const newVal = currentValue.slice(0, -1);
       setValue(newVal);
@@ -112,7 +110,6 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       return;
     }
 
-    // Escape — clear input
     if (key.escape) {
       setValue('');
       valueRef.current = '';
@@ -123,12 +120,10 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       return;
     }
 
-    // Ignore other control/meta keys
     if (key.ctrl || key.meta) return;
     if (key.upArrow || key.downArrow || key.leftArrow || key.rightArrow) return;
     if (key.tab) return;
 
-    // Regular character input
     if (input) {
       const newVal = currentValue + input;
       setValue(newVal);
@@ -137,37 +132,54 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   });
 
   const modeColor = mode === 'cost' ? colors.pink : colors.cyan;
+  const modeLabel = mode === 'cost' ? 'Cost' : 'Time';
 
-  // For multi-line history entries, show first line + indicator
-  const displayValue = value.includes('\n')
-    ? `${value.split('\n')[0]} ... (${value.split('\n').length} lines)`
-    : value;
-
-  if (isCollecting) {
-    const lineLabel = expectedLines
-      ? `Line ${currentLine}/${expectedLines}`
-      : `Line ${currentLine}`;
-
-    return (
-      <Box>
-        <Text color={colors.muted}>{lineLabel} </Text>
-        <Text color={modeColor}>❯ </Text>
-        <Text>{displayValue}</Text>
-        <Text color={colors.muted}>█</Text>
-      </Box>
-    );
-  }
+  const historyLines = value.includes('\n') ? value.split('\n') : null;
 
   return (
     <Box flexDirection="column">
+      {/* Separator */}
+      <Text color={colors.muted}>─────────────────────────────────────────</Text>
+
+      {/* Status bar */}
       <Box>
-        <Text color={modeColor} bold>[{mode}]</Text>
-        <Text color={modeColor}> ❯ </Text>
-        <Text>{displayValue}</Text>
+        <Text color={colors.muted}>Mode: </Text>
+        <Text color={modeColor}>{modeLabel}</Text>
+        {isCollecting && expectedLines && (
+          <Text color={colors.muted}> │ Line {currentLine}/{expectedLines}</Text>
+        )}
+        {transitCount > 0 && (
+          <Text color={colors.muted}> │ Transit: </Text>
+        )}
+        {transitCount > 0 && (
+          <Text color={colors.amber}>{transitCount}</Text>
+        )}
+      </Box>
+
+      {/* Previously collected lines (during collection) */}
+      {isCollecting && collectedLines.map((line, i) => (
+        <Box key={i}>
+          <Text color={colors.dimWhite}>  {line}</Text>
+        </Box>
+      ))}
+
+      {/* Multi-line history recall — show all lines expanded */}
+      {!isCollecting && historyLines && historyLines.slice(0, -1).map((line, i) => (
+        <Box key={i}>
+          <Text color={colors.dimWhite}>  {line}</Text>
+        </Box>
+      ))}
+
+      {/* Active input line */}
+      <Box>
+        <Text color={colors.pink}>❯ </Text>
+        <Text>{historyLines ? historyLines[historyLines.length - 1] : value}</Text>
         <Text color={colors.muted}>█</Text>
       </Box>
+
+      {/* Hints */}
       <Box marginTop={1}>
-        <Text color={colors.muted}>Press Enter to execute • ↑/↓ history • Ctrl+C cancel</Text>
+        <Text color={colors.muted}>Enter to execute • ↑/↓ history • Ctrl+C cancel</Text>
       </Box>
     </Box>
   );

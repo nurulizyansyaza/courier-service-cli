@@ -249,13 +249,6 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
       })}
 
       <Box marginTop={2} flexDirection="column">
-        <StatusBar
-          mode={session.mode}
-          transitCount={session.transitPackages.length}
-        />
-      </Box>
-
-      <Box marginTop={2} flexDirection="column">
         {isCalculating ? (
           <Text color={colors.amber}>⏳ Calculating...</Text>
         ) : (
@@ -264,9 +257,11 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             isCollecting={isCollecting}
             currentLine={collectedLines.length + 1}
             expectedLines={getExpectedTotalLines()}
+            collectedLines={collectedLines}
             onSubmit={handleSubmit}
             onCancel={handleCancelInput}
             history={commandHistory}
+            transitCount={session.transitPackages.length}
           />
         )}
       </Box>

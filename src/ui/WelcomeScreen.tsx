@@ -94,10 +94,6 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ mode }) => (
     </Box>
 
     <Box marginTop={1} flexDirection="column">
-      <Text color={colors.muted}>─────────────────────────────────────────</Text>
-    </Box>
-
-    <Box marginTop={1} flexDirection="column">
       <Text color={colors.cyan}>Available Commands:</Text>
       <Text>  <Text color={colors.emerald}>/change mode</Text> <Text color={colors.muted}>cost | time</Text> <Text color={colors.muted}>- Switch calculation mode</Text></Text>
       <Text>  <Text color={colors.amber}>clear</Text> <Text color={colors.muted}>- Clear screen</Text></Text>
@@ -108,8 +104,5 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ mode }) => (
       <Text>  <Text color={colors.muted}>Ctrl+C</Text> <Text color={colors.muted}>- Cancel current input</Text></Text>
     </Box>
 
-    <Box marginTop={1} flexDirection="column">
-      <Text color={colors.muted}>─────────────────────────────────────────</Text>
-    </Box>
   </Box>
 );
