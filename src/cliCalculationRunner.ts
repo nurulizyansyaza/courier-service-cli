@@ -273,7 +273,15 @@ function runLocally(
       undeliverable: r.undeliverable,
       undeliverableReason: r.undeliverableReason,
     }));
-    return { success: true, mode: 'time', results };
+    const updatedTransit: TransitPackage[] = deliveryResults
+      .filter((r: DetailedDeliveryResult) => r.undeliverable)
+      .map((r: DetailedDeliveryResult) => ({
+        id: r.id,
+        weight: r.weight,
+        distance: r.distance,
+        offerCode: r.offerCode || '',
+      }));
+    return { success: true, mode: 'time', results, updatedTransit };
   }
 }
 

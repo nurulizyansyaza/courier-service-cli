@@ -3,7 +3,6 @@ import { Box, Text, useStdout, useApp } from 'ink';
 import { colors } from './theme';
 import { WelcomeScreen } from './WelcomeScreen';
 import { HelpScreen } from './HelpScreen';
-import { StatusBar } from './StatusBar';
 import { ResultCard } from './ResultCard';
 import { ErrorDisplay } from './ErrorDisplay';
 import { InputPrompt } from './InputPrompt';
@@ -253,13 +252,6 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
       })}
 
       <Box marginTop={1} flexDirection="column">
-        <StatusBar
-          mode={session.mode}
-          transitCount={session.transitPackages.length}
-        />
-      </Box>
-
-      <Box marginTop={1} flexDirection="column">
         {isCalculating ? (
           <Text color={colors.amber}>⏳ Calculating...</Text>
         ) : (
@@ -273,6 +265,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             onCancel={handleCancelInput}
             onEditLine={handleEditLine}
             history={commandHistory}
+            transitCount={session.transitPackages.length}
           />
         )}
       </Box>

@@ -47,8 +47,8 @@ const PackageRow: React.FC<{ result: PackageResult; mode: 'cost' | 'time'; renam
         <Text color={colors.cyan} bold>{result.id}</Text>
         {renamedFrom && (
           <>
-            <Text color={colors.muted}> (was </Text>
-            <Text color={colors.muted} strikethrough>{renamedFrom}</Text>
+            <Text color={colors.muted}> (</Text>
+            <Text color={colors.muted} dimColor>~{renamedFrom}~</Text>
             <Text color={colors.muted}>) </Text>
             <Text color={colors.purple}>Notified</Text>
           </>
