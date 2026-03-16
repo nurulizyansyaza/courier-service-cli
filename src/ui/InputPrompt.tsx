@@ -11,6 +11,7 @@ interface InputPromptProps {
   onSubmit: (value: string) => void;
   onCancel: () => void;
   onEditLine?: (index: number, value: string) => void;
+  onPaste?: (lines: string[]) => void;
   history: string[];
   transitCount: number;
 }
@@ -24,6 +25,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   onSubmit,
   onCancel,
   onEditLine,
+  onPaste,
   history,
   transitCount,
 }) => {
@@ -49,6 +51,8 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   onCancelRef.current = onCancel;
   const onEditLineRef = useRef(onEditLine);
   onEditLineRef.current = onEditLine;
+  const onPasteRef = useRef(onPaste);
+  onPasteRef.current = onPaste;
   const historyRef = useRef(history);
   historyRef.current = history;
   const isCollectingRef = useRef(isCollecting);
@@ -339,6 +343,25 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
     if (key.tab) return;
 
     if (input) {
+      // Detect pasted multiline input (contains \r or \n)
+      if (input.includes('\r') || input.includes('\n')) {
+        const lines = input.split(/\r?\n|\r/).filter(l => l.trim());
+        if (lines.length > 0 && onPasteRef.current) {
+          const current = currentValue.trim();
+          const firstLine = current ? current + lines[0] : lines[0];
+          const allLines = [firstLine, ...lines.slice(1)].map(l => l.trim()).filter(Boolean);
+          onPasteRef.current(allLines);
+          setValue('');
+          valueRef.current = '';
+          setCursorPos(0);
+          cursorPosRef.current = 0;
+          setHistoryIndex(-1);
+          historyIndexRef.current = -1;
+          setDraft('');
+          draftRef.current = '';
+          return;
+        }
+      }
       const newVal = currentValue.slice(0, cursor) + input + currentValue.slice(cursor);
       setValue(newVal);
       valueRef.current = newVal;

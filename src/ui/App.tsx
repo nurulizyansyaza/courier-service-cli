@@ -42,6 +42,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   const [collectedLines, setCollectedLines] = useState<string[]>([]);
   const [expectedPackageCount, setExpectedPackageCount] = useState<number | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [pastedLines, setPastedLines] = useState<string[]>([]);
 
   // Refs for values needed in callbacks to avoid stale closures
   const sessionRef = useRef(session);
@@ -54,6 +55,8 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   collectedLinesRef.current = collectedLines;
   const expectedPackageCountRef = useRef(expectedPackageCount);
   expectedPackageCountRef.current = expectedPackageCount;
+  const pastedLinesRef = useRef(pastedLines);
+  pastedLinesRef.current = pastedLines;
 
   useEffect(() => {
     saveSession({ ...session, commandHistory });
@@ -94,6 +97,12 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   }, [addHistory]);
 
   const handleCancelInput = useCallback(() => {
+    if (pastedLinesRef.current.length > 0) {
+      setPastedLines([]);
+      pastedLinesRef.current = [];
+      addHistory({ type: 'info', content: 'Input cancelled' });
+      return;
+    }
     if (isCollectingRef.current) {
       setIsCollecting(false);
       setCollectedLines([]);
@@ -103,6 +112,16 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   }, [addHistory]);
 
   const handleEditLine = useCallback((index: number, newValue: string) => {
+    if (pastedLinesRef.current.length > 0) {
+      setPastedLines(prev => {
+        const updated = [...prev];
+        updated[index] = newValue.trim();
+        return updated;
+      });
+      pastedLinesRef.current = [...pastedLinesRef.current];
+      pastedLinesRef.current[index] = newValue.trim();
+      return;
+    }
     setCollectedLines(prev => {
       const updated = [...prev];
       updated[index] = newValue.trim();
@@ -110,8 +129,25 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     });
   }, []);
 
+  const handlePaste = useCallback((lines: string[]) => {
+    setPastedLines(lines);
+    pastedLinesRef.current = lines;
+  }, []);
+
   const handleSubmit = useCallback((value: string) => {
     const trimmed = value.trim();
+
+    // If pasted lines are pending, Enter executes them
+    if (pastedLinesRef.current.length > 0 && !trimmed) {
+      const lines = pastedLinesRef.current;
+      setPastedLines([]);
+      pastedLinesRef.current = [];
+      const fullInput = lines.join('\n');
+      addToCommandHistory(fullInput);
+      executeCalculation(fullInput);
+      return;
+    }
+
     if (!trimmed) return;
 
     // If currently collecting multi-line input
@@ -257,13 +293,14 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
         ) : (
           <InputPrompt
             mode={session.mode}
-            isCollecting={isCollecting}
+            isCollecting={isCollecting || pastedLines.length > 0}
             currentLine={collectedLines.length + 1}
             expectedLines={getExpectedTotalLines()}
-            collectedLines={collectedLines}
+            collectedLines={pastedLines.length > 0 ? pastedLines : collectedLines}
             onSubmit={handleSubmit}
             onCancel={handleCancelInput}
             onEditLine={handleEditLine}
+            onPaste={handlePaste}
             history={commandHistory}
             transitCount={session.transitPackages.length}
           />
