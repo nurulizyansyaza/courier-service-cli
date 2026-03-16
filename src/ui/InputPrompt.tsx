@@ -1,6 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
-import TextInput from 'ink-text-input';
 import { colors } from './theme';
 
 interface InputPromptProps {
@@ -9,6 +8,7 @@ interface InputPromptProps {
   currentLine: number;
   expectedLines: number | null;
   onSubmit: (value: string) => void;
+  onCancel: () => void;
   history: string[];
 }
 
@@ -18,50 +18,121 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   currentLine,
   expectedLines,
   onSubmit,
+  onCancel,
   history,
 }) => {
   const [value, setValue] = useState('');
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [draft, setDraft] = useState('');
 
-  const handleSubmit = useCallback((val: string) => {
-    onSubmit(val);
-    setValue('');
-    setHistoryIndex(-1);
-    setDraft('');
-  }, [onSubmit]);
+  // Use refs to avoid stale closures in useInput callback
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const historyIndexRef = useRef(historyIndex);
+  historyIndexRef.current = historyIndex;
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  const onSubmitRef = useRef(onSubmit);
+  onSubmitRef.current = onSubmit;
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+  const historyRef = useRef(history);
+  historyRef.current = history;
 
   useInput((input, key) => {
-    if (key.upArrow && history.length > 0) {
-      const newIndex = historyIndex === -1
-        ? history.length - 1
-        : Math.max(0, historyIndex - 1);
+    const currentValue = valueRef.current;
+    const currentHistoryIndex = historyIndexRef.current;
+    const currentDraft = draftRef.current;
+    const currentHistory = historyRef.current;
 
-      if (historyIndex === -1) {
-        setDraft(value);
+    // Ctrl+C — cancel current multi-line collection or clear input
+    if (key.ctrl && input === 'c') {
+      setValue('');
+      valueRef.current = '';
+      setHistoryIndex(-1);
+      historyIndexRef.current = -1;
+      setDraft('');
+      draftRef.current = '';
+      onCancelRef.current();
+      return;
+    }
+
+    // Enter — submit
+    if (key.return) {
+      const submitted = currentValue;
+      setValue('');
+      valueRef.current = '';
+      setHistoryIndex(-1);
+      historyIndexRef.current = -1;
+      setDraft('');
+      draftRef.current = '';
+      onSubmitRef.current(submitted);
+      return;
+    }
+
+    // Up arrow — navigate history
+    if (key.upArrow && currentHistory.length > 0) {
+      const newIndex = currentHistoryIndex === -1
+        ? currentHistory.length - 1
+        : Math.max(0, currentHistoryIndex - 1);
+
+      if (currentHistoryIndex === -1) {
+        setDraft(currentValue);
+        draftRef.current = currentValue;
       }
       setHistoryIndex(newIndex);
-      setValue(history[newIndex]);
+      historyIndexRef.current = newIndex;
+      setValue(currentHistory[newIndex]);
+      valueRef.current = currentHistory[newIndex];
       return;
     }
 
-    if (key.downArrow && historyIndex !== -1) {
-      const newIndex = historyIndex + 1;
-      if (newIndex >= history.length) {
+    // Down arrow — navigate history
+    if (key.downArrow && currentHistoryIndex !== -1) {
+      const newIndex = currentHistoryIndex + 1;
+      if (newIndex >= currentHistory.length) {
         setHistoryIndex(-1);
-        setValue(draft);
+        historyIndexRef.current = -1;
+        setValue(currentDraft);
+        valueRef.current = currentDraft;
       } else {
         setHistoryIndex(newIndex);
-        setValue(history[newIndex]);
+        historyIndexRef.current = newIndex;
+        setValue(currentHistory[newIndex]);
+        valueRef.current = currentHistory[newIndex];
       }
       return;
     }
 
-    // Ctrl+C in ink is handled by useApp, but we reset input on escape
+    // Backspace — delete last character
+    if (key.backspace || key.delete) {
+      const newVal = currentValue.slice(0, -1);
+      setValue(newVal);
+      valueRef.current = newVal;
+      return;
+    }
+
+    // Escape — clear input
     if (key.escape) {
       setValue('');
+      valueRef.current = '';
       setHistoryIndex(-1);
+      historyIndexRef.current = -1;
       setDraft('');
+      draftRef.current = '';
+      return;
+    }
+
+    // Ignore other control/meta keys
+    if (key.ctrl || key.meta) return;
+    if (key.upArrow || key.downArrow || key.leftArrow || key.rightArrow) return;
+    if (key.tab) return;
+
+    // Regular character input
+    if (input) {
+      const newVal = currentValue + input;
+      setValue(newVal);
+      valueRef.current = newVal;
     }
   });
 
@@ -76,16 +147,23 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
       <Box>
         <Text color={colors.muted}>{lineLabel} </Text>
         <Text color={modeColor}>❯ </Text>
-        <TextInput value={value} onChange={setValue} onSubmit={handleSubmit} />
+        <Text>{value}</Text>
+        <Text color={colors.muted}>█</Text>
       </Box>
     );
   }
 
   return (
-    <Box>
-      <Text color={modeColor} bold>[{mode}]</Text>
-      <Text color={modeColor}> ❯ </Text>
-      <TextInput value={value} onChange={setValue} onSubmit={handleSubmit} />
+    <Box flexDirection="column">
+      <Box>
+        <Text color={modeColor} bold>[{mode}]</Text>
+        <Text color={modeColor}> ❯ </Text>
+        <Text>{value}</Text>
+        <Text color={colors.muted}>█</Text>
+      </Box>
+      <Box marginTop={1}>
+        <Text color={colors.muted}>Press Enter to execute • ↑/↓ history • Ctrl+C cancel</Text>
+      </Box>
     </Box>
   );
 };

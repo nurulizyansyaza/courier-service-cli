@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { Box, Text, useApp, useInput } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import { colors } from './theme';
 import { WelcomeScreen } from './WelcomeScreen';
 import { HelpScreen } from './HelpScreen';
@@ -8,7 +8,7 @@ import { ResultCard } from './ResultCard';
 import { ErrorDisplay } from './ErrorDisplay';
 import { InputPrompt } from './InputPrompt';
 import { processCommand } from '../cliCommands';
-import { runCalculation, type TransitPackage, type CalculationResult } from '../cliCalculationRunner';
+import { runCalculation, type CalculationResult } from '../cliCalculationRunner';
 import { loadSession, saveSession, type SessionData } from '../cliSession';
 
 type HistoryItem =
@@ -26,8 +26,6 @@ interface AppProps {
 }
 
 export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
-  const { exit } = useApp();
-
   const [session, setSession] = useState<SessionData>(() => {
     const loaded = loadSession();
     if (localOnly) loaded.apiUrl = null;
@@ -51,20 +49,6 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
       commandHistory,
     });
   }, [session, commandHistory]);
-
-  useInput((_input, key) => {
-    if (key.ctrl && _input === 'c') {
-      if (isCollecting) {
-        setIsCollecting(false);
-        setCollectedLines([]);
-        setExpectedPackageCount(null);
-        addHistory({ type: 'info', content: 'Input cancelled' });
-      } else {
-        saveSession({ ...session, commandHistory });
-        exit();
-      }
-    }
-  });
 
   const addHistory = useCallback((item: HistoryItem) => {
     setHistory(prev => [...prev, item]);
@@ -142,6 +126,15 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     }
   }, [collectedLines, expectedPackageCount, session.mode, addToCommandHistory, executeCalculation]);
 
+  const handleCancelInput = useCallback(() => {
+    if (isCollecting) {
+      setIsCollecting(false);
+      setCollectedLines([]);
+      setExpectedPackageCount(null);
+      addHistory({ type: 'info', content: 'Input cancelled' });
+    }
+  }, [isCollecting, addHistory]);
+
   const handleSubmit = useCallback((value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
@@ -158,11 +151,6 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
       addHistory({ type: 'command', content: trimmed });
 
       switch (action.type) {
-        case 'exit':
-          saveSession({ ...session, commandHistory });
-          exit();
-          break;
-
         case 'clear':
           setHistory([]);
           break;
@@ -182,31 +170,13 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             content: `Mode changed to ${action.mode}`,
           });
           break;
-
-        case 'connect': {
-          const url = action.url || 'http://localhost:3000';
-          setSession(prev => ({ ...prev, apiUrl: url }));
-          addHistory({
-            type: 'info',
-            content: `Connected to ${url}`,
-          });
-          break;
-        }
-
-        case 'disconnect':
-          setSession(prev => ({ ...prev, apiUrl: null }));
-          addHistory({
-            type: 'info',
-            content: 'Disconnected from API (using local calculations)',
-          });
-          break;
       }
       return;
     }
 
     // Not a command — start collecting multi-line input
     handleHeaderLine(trimmed);
-  }, [isCollecting, session, commandHistory, exit, addHistory, addToCommandHistory, handleHeaderLine, handleCollectedLine]);
+  }, [isCollecting, addHistory, addToCommandHistory, handleHeaderLine, handleCollectedLine]);
 
   const getExpectedTotalLines = () => {
     if (!expectedPackageCount) return null;
@@ -220,13 +190,12 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
       {history.map((item, i) => {
         switch (item.type) {
           case 'welcome':
-            return <WelcomeScreen key={i} />;
+            return <WelcomeScreen key={i} mode={session.mode} />;
           case 'help':
             return <HelpScreen key={i} />;
           case 'input':
             return (
-              <Box key={i} marginBottom={1} flexDirection="column">
-                <Text color={colors.muted}>Input:</Text>
+              <Box key={i} flexDirection="column">
                 {item.content.split('\n').map((line, j) => (
                   <Text key={j} color={colors.dimWhite}>  {line}</Text>
                 ))}
@@ -234,7 +203,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             );
           case 'result':
             return item.data.success ? (
-              <ResultCard key={i} mode={item.data.mode} results={item.data.results} />
+              <ResultCard key={i} mode={item.data.mode} results={item.data.results} renamedPackages={item.data.renamedPackages} />
             ) : (
               <ErrorDisplay key={i} error={item.data.error} />
             );
@@ -259,7 +228,6 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
 
       <StatusBar
         mode={session.mode}
-        apiUrl={session.apiUrl}
         transitCount={session.transitPackages.length}
       />
 
@@ -274,6 +242,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
           currentLine={collectedLines.length + 1}
           expectedLines={getExpectedTotalLines()}
           onSubmit={handleSubmit}
+          onCancel={handleCancelInput}
           history={commandHistory}
         />
       )}

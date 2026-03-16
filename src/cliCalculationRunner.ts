@@ -7,22 +7,25 @@ import {
   type TransitPackageInput,
 } from '@nurulizyansyaza/courier-service-core';
 
-export interface CostResult {
+export interface PackageResult {
   id: string;
   discount: number;
   totalCost: number;
-}
-
-export interface TimeResult {
-  id: string;
-  discount: number;
-  totalCost: number;
-  deliveryTime: number | null;
+  baseCost: number;
+  weight: number;
+  distance: number;
+  offerCode?: string;
+  deliveryCost: number;
+  deliveryTime?: number;
   vehicleId?: number;
   deliveryRound?: number;
+  packagesRemaining?: number;
+  currentTime?: number;
   vehicleReturnTime?: number;
+  roundTripTime?: number;
   undeliverable?: boolean;
   undeliverableReason?: string;
+  renamedFrom?: string;
 }
 
 export interface TransitPackage {
@@ -35,7 +38,7 @@ export interface TransitPackage {
 export interface CalculationSuccess {
   success: true;
   mode: 'cost' | 'time';
-  results: CostResult[] | TimeResult[];
+  results: PackageResult[];
   updatedTransit?: TransitPackage[];
   renamedPackages?: { oldId: string; newId: string }[];
 }
@@ -99,19 +102,21 @@ async function fetchFromApi(
 
     if (mode === 'cost') {
       const data = await res.json() as { results: ApiCostResult[] };
-      const results: CostResult[] = data.results.map((r) => ({
+      const results: PackageResult[] = data.results.map((r) => ({
         id: r.id,
         discount: r.discount,
         totalCost: r.cost,
+        baseCost: 0, weight: 0, distance: 0, deliveryCost: 0,
       }));
       return { success: true, mode: 'cost', results };
     } else {
       const data = await res.json() as ApiTimeData;
-      const results: TimeResult[] = data.results.map((r) => ({
+      const results: PackageResult[] = data.results.map((r) => ({
         id: r.id,
         discount: r.discount,
         totalCost: r.totalCost,
-        deliveryTime: r.deliveryTime ?? null,
+        baseCost: 0, weight: 0, distance: 0, deliveryCost: 0,
+        deliveryTime: r.deliveryTime,
         vehicleId: r.vehicleId,
         deliveryRound: r.deliveryRound,
         vehicleReturnTime: r.vehicleReturnTime,
@@ -142,9 +147,19 @@ function runLocally(
 ): CalculationResult {
   if (mode === 'cost') {
     const { baseCost, packages } = parseInput(input, 'cost');
-    const results: CostResult[] = packages.map((pkg) => {
+    const results: PackageResult[] = packages.map((pkg) => {
       const { discount, totalCost } = calculatePackageCost(pkg, baseCost);
-      return { id: pkg.id, discount: Math.round(discount), totalCost: Math.round(totalCost) };
+      const deliveryCost = baseCost + pkg.weight * 10 + pkg.distance * 5;
+      return {
+        id: pkg.id,
+        discount: Math.round(discount),
+        totalCost: Math.round(totalCost),
+        baseCost,
+        weight: pkg.weight,
+        distance: pkg.distance,
+        offerCode: pkg.offerCode,
+        deliveryCost,
+      };
     });
     return { success: true, mode: 'cost', results };
   } else {
@@ -165,13 +180,14 @@ function runLocally(
         : undefined;
 
       const lines = transitResult.output.split('\n').filter(Boolean);
-      const results: TimeResult[] = lines.map((line) => {
+      const results: PackageResult[] = lines.map((line) => {
         const parts = line.split(/\s+/);
         return {
           id: parts[0],
           discount: Number(parts[1]),
           totalCost: Number(parts[2]),
-          deliveryTime: parts[3] === 'N/A' ? null : Number(parts[3]),
+          deliveryTime: parts[3] === 'N/A' ? undefined : Number(parts[3]),
+          baseCost: 0, weight: 0, distance: 0, deliveryCost: 0,
         };
       });
       return { success: true, mode: 'time', results, updatedTransit, renamedPackages };
@@ -182,14 +198,22 @@ function runLocally(
       return { success: false, error: 'Missing fleet line: expected "noOfVehicles maxSpeed maxCarrierWeight"' };
     }
     const deliveryResults = computeDeliveryResultsFromParsed(baseCost, packages, vehicles);
-    const results: TimeResult[] = deliveryResults.map((r: DetailedDeliveryResult) => ({
+    const results: PackageResult[] = deliveryResults.map((r: DetailedDeliveryResult) => ({
       id: r.id,
       discount: Math.round(r.discount),
       totalCost: Math.round(r.totalCost),
-      deliveryTime: r.deliveryTime ?? null,
+      baseCost: r.baseCost,
+      weight: r.weight,
+      distance: r.distance,
+      offerCode: r.offerCode,
+      deliveryCost: r.deliveryCost,
+      deliveryTime: r.deliveryTime,
       vehicleId: r.vehicleId,
       deliveryRound: r.deliveryRound,
+      packagesRemaining: r.packagesRemaining,
+      currentTime: r.currentTime,
       vehicleReturnTime: r.vehicleReturnTime,
+      roundTripTime: r.roundTripTime,
       undeliverable: r.undeliverable,
       undeliverableReason: r.undeliverableReason,
     }));

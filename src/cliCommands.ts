@@ -1,20 +1,13 @@
 export type CommandAction =
   | { type: 'change_mode'; mode: 'cost' | 'time' }
-  | { type: 'connect'; url?: string }
-  | { type: 'disconnect' }
   | { type: 'clear' }
   | { type: 'help' }
   | { type: 'restart' }
-  | { type: 'exit' }
   | null;
 
 export function processCommand(input: string): CommandAction {
   const trimmed = input.trim();
   const lower = trimmed.toLowerCase();
-
-  if (lower === 'exit' || lower === 'quit') {
-    return { type: 'exit' };
-  }
 
   if (lower === 'clear') {
     return { type: 'clear' };
@@ -26,16 +19,6 @@ export function processCommand(input: string): CommandAction {
 
   if (lower === '/restart') {
     return { type: 'restart' };
-  }
-
-  if (lower === '/disconnect') {
-    return { type: 'disconnect' };
-  }
-
-  if (lower.startsWith('/connect')) {
-    const parts = trimmed.split(/\s+/);
-    const url = parts.length > 1 ? parts[1] : undefined;
-    return { type: 'connect', url };
   }
 
   if (lower.startsWith('/change mode')) {

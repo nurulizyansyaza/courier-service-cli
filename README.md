@@ -99,14 +99,11 @@ node bin/courier-service interactive --api-url http://localhost:4000
 | Command | Description |
 |---------|-------------|
 | `/change mode cost \| time` | Switch calculation mode |
-| `/connect [url]` | Connect to API server |
-| `/disconnect` | Use local calculations only |
 | `clear` | Clear screen |
 | `/restart` | Show welcome screen |
 | `help` | Show available commands |
-| `exit` / `quit` | Exit CLI |
 | `↑` / `↓` | Navigate command history |
-| `Ctrl+C` | Cancel input / Exit |
+| `Ctrl+C` | Cancel current input |
 
 ### Problem 1 — Delivery Cost Estimation (One-shot)
 
@@ -188,17 +185,17 @@ The interactive TUI replicates the React frontend's full functionality in a term
 | **Package renaming** | ✅ | ✅ Conflict detection |
 | **API integration** | ✅ fetch → fallback | ✅ fetch → fallback |
 | **Local-only mode** | ✅ Auto-fallback | ✅ `--local` flag |
-| **Welcome screen** | ✅ ASCII art + offers | ✅ ASCII art + offers |
-| **Result cards** | ✅ Bordered, colored | ✅ Bordered, colored |
-| **Error display** | ✅ Multi-error panel | ✅ Red bordered panel |
+| **Welcome screen** | ✅ ASCII art + offers | ✅ Matching ASCII art + offers |
+| **Result cards** | ✅ Cost breakdown, formula | ✅ Full breakdown with formula |
+| **Error display** | ✅ Red text | ✅ Red text (matching style) |
 | **Undeliverable warnings** | ✅ Amber banner | ✅ Amber ⚠ indicator |
 | **Vehicle/round info** | ✅ | ✅ |
-| **Command routing** | ✅ 9 commands | ✅ 9 commands |
+| **Command routing** | ✅ 9 commands | ✅ 4 commands + shortcuts |
 | **Command history** | ✅ ↑/↓ localStorage | ✅ ↑/↓ session file |
 | **Session persistence** | ✅ localStorage | ✅ `~/.courier-cli-session.json` |
 | **Color theme** | ✅ Tailwind pink/cyan | ✅ Chalk pink/cyan (matched) |
 | **Mode switching** | ✅ `/change mode` | ✅ `/change mode` |
-| **Ctrl+C** | ✅ Clear input | ✅ Cancel / Exit |
+| **Ctrl+C** | ✅ Clear input | ✅ Cancel input |
 | **Multi-tab** | ✅ | N/A (terminal instances) |
 | **Framework switching** | ✅ React/Vue/Svelte | N/A (Ink only) |
 
@@ -233,7 +230,7 @@ The CLI will try the API first for validation/rate-limiting benefits, then fall 
 npm test
 ```
 
-**35 tests** across 5 test suites:
+**31 tests** across 5 test suites:
 - `commands.test.ts` — Cost/delivery one-shot calculation tests
 - `io.test.ts` — stdin reader tests
 - `cliCommands.test.ts` — Interactive command routing tests
@@ -318,6 +315,28 @@ GitHub Actions workflow (`.github/workflows/ci.yml`) runs on push/PR to `main`:
 Requires a `DEPLOY_TRIGGER_TOKEN` secret (fine-grained PAT with Actions + Contents write access on the `courier-service` repo).
 
 ## Changelog
+
+### v1.2.0 — UI Parity with Frontend
+
+**UI Improvements (matching React frontend exactly):**
+- **Welcome screen** — full-size motorcycle ASCII art + COURIER block letters with spacing between them
+- **Result cards** — complete cost breakdown with formula (`baseCost + (weight × 10) + (distance × 5)`), discount percentage, offer code, base cost/weight/distance, vehicle round details, packages remaining, round trip times
+- **Error display** — simplified to match frontend (plain red text, no bordered box)
+- **Help screen** — matching command colors (emerald/amber/cyan) and layout
+- **Input prompt** — custom raw input handler replacing `ink-text-input` for proper Ctrl+C and arrow key behavior; hint text shown below prompt
+- **Custom input handling** — replaced `ink-text-input` with direct `useInput` for reliable Ctrl+C cancel, history navigation, and no conflicts with Ink's built-in key handling
+
+**Commands Removed:**
+- `/connect` and `/disconnect` — API URL is now set via CLI flags only (`--api-url`, `--local`)
+- `exit` — removed to prevent accidental process termination; use terminal's native Ctrl+C (twice) to close
+- "API: connected" status bar indicator removed
+
+**Data Enhancements:**
+- Unified `PackageResult` type with all detail fields (baseCost, weight, distance, offerCode, deliveryCost, deliveryRound, vehicleId, packagesRemaining, currentTime, vehicleReturnTime, roundTripTime)
+- Result card shows delivery cost formula breakdown
+- Discount shown with percentage of delivery cost
+- Renamed package indicator (`was PKG1`)
+- Undeliverable banner with amber ⚠ warning
 
 ### v1.1.0 — Interactive TUI Mode
 

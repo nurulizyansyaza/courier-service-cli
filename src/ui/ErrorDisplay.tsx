@@ -10,15 +10,12 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({ error }) => {
   const lines = error.split('\n').filter(Boolean);
 
   return (
-    <Box borderStyle="round" borderColor={colors.red} paddingX={2} paddingY={1} flexDirection="column" marginBottom={1}>
-      <Text color={colors.red} bold>Error</Text>
-      <Box marginTop={1} flexDirection="column">
-        {lines.map((line, i) => (
-          <Text key={i} color={colors.red}>
-            {lines.length > 1 ? `• ${line}` : line}
-          </Text>
-        ))}
-      </Box>
+    <Box paddingLeft={0} flexDirection="column" marginBottom={1}>
+      {lines.map((line, i) => (
+        <Text key={i} color={colors.red}>
+          {lines.length > 1 ? `• ${line}` : line}
+        </Text>
+      ))}
     </Box>
   );
 };

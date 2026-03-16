@@ -5,4 +5,4 @@ export { runCalculation } from './cliCalculationRunner';
 export { loadSession, saveSession, clearSession } from './cliSession';
 export type { SessionData } from './cliSession';
 export type { CommandAction } from './cliCommands';
-export type { CalculationResult, CostResult, TimeResult, TransitPackage } from './cliCalculationRunner';
+export type { CalculationResult, PackageResult, TransitPackage } from './cliCalculationRunner';
