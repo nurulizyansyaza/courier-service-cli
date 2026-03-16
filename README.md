@@ -14,27 +14,59 @@ CLI application for the **Courier Service** App Calculator. Supports two modes:
 
 ```bash
 # 1. Build the core library first (required dependency)
-cd ../courier-service-core
+cd courier-service-core
 npm install
 npm run build
 
-# 2. Install and build the CLI
+# 2. Build and install the CLI
 cd ../courier-service-cli
 npm install
 npm run build        # or: npx tsc
 ```
 
+### Run Interactive TUI
+
+```bash
+# Local-only mode (no API needed)
+node bin/courier-service interactive --local
+
+# With API (start API server first in another terminal)
+node bin/courier-service interactive
+```
+
+### Run with API Server
+
+```bash
+# Terminal 1: Start the API server
+cd courier-service-api
+npm install
+npm run build
+npm start
+# API runs on http://localhost:3000
+
+# Terminal 2: Launch CLI (connects to API automatically)
+cd courier-service-cli
+node bin/courier-service interactive
+
+# Or specify a custom API URL
+node bin/courier-service interactive --api-url http://localhost:4000
+```
+
+### Run One-shot Mode (stdin)
+
+```bash
+# Cost calculation
+printf '100 3\nPKG1 5 5 OFR001\nPKG2 15 5 OFR002\nPKG3 10 100 OFR003\n' | node bin/courier-service cost
+
+# Delivery time calculation
+printf '100 5\nPKG1 50 30 OFR001\nPKG2 75 125 OFR008\nPKG3 175 100 OFR003\nPKG4 110 60 OFR002\nPKG5 155 95 NA\n2 70 200\n' | node bin/courier-service delivery
+```
+
 ### Verify Installation
 
 ```bash
-# Check the CLI works
 node bin/courier-service --version
-
-# Quick cost calculation test
-printf '100 3\nPKG1 5 5 OFR001\nPKG2 15 5 OFR002\nPKG3 10 100 OFR003\n' | node bin/courier-service cost
-
-# Launch interactive TUI
-node bin/courier-service interactive --local
+node bin/courier-service --help
 ```
 
 ## Usage
