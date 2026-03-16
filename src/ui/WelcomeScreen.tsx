@@ -25,7 +25,7 @@ const MOTORCYCLE_ART = `                            ___
   ~-_         _-~ /_______________________________/    \`-_         _-~
      ~ ----- ~                                            ~ ----- ~`;
 
-     
+
 const COURIER_ART = ` ██████╗ ██████╗ ██╗   ██╗██████╗ ██╗███████╗██████╗
 ██╔════╝██╔═══██╗██║   ██║██╔══██╗██║██╔════╝██╔══██╗
 ██║     ██║   ██║██║   ██║██████╔╝██║█████╗  ██████╔╝
@@ -93,7 +93,7 @@ export const WelcomeScreen: React.FC<WelcomeScreenProps> = ({ mode }) => (
       </Box>
     </Box>
 
-    <Box marginTop={1} flexDirection="column">
+    <Box marginTop={1} flexDirection="column" marginBottom={1}>
       <Text color={colors.cyan}>Available Commands:</Text>
       <Text>  <Text color={colors.emerald}>/change mode</Text> <Text color={colors.muted}>cost | time</Text> <Text color={colors.muted}>- Switch calculation mode</Text></Text>
       <Text>  <Text color={colors.amber}>clear</Text> <Text color={colors.muted}>- Clear screen</Text></Text>

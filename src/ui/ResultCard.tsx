@@ -118,16 +118,15 @@ export const ResultCard: React.FC<ResultCardProps> = ({ mode, results, renamedPa
 
   return (
     <Box flexDirection="column">
-      <Text color={colors.muted}>─────────────────────────────────────────</Text>
-      {results.map((r) => (
-        <PackageRow
-          key={r.id}
-          result={r}
-          mode={mode}
-          renamedFrom={renamedMap.get(r.id)}
-        />
+      {results.map((r, i) => (
+        <Box key={r.id} flexDirection="column" marginTop={i > 0 ? 1 : 0}>
+          <PackageRow
+            result={r}
+            mode={mode}
+            renamedFrom={renamedMap.get(r.id)}
+          />
+        </Box>
       ))}
-      <Text color={colors.muted}>─────────────────────────────────────────</Text>
     </Box>
   );
 };

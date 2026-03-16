@@ -103,6 +103,14 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     }
   }, [addHistory]);
 
+  const handleEditLine = useCallback((index: number, newValue: string) => {
+    setCollectedLines(prev => {
+      const updated = [...prev];
+      updated[index] = newValue.trim();
+      return updated;
+    });
+  }, []);
+
   const handleSubmit = useCallback((value: string) => {
     const trimmed = value.trim();
     if (!trimmed) return;
@@ -260,6 +268,7 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
             collectedLines={collectedLines}
             onSubmit={handleSubmit}
             onCancel={handleCancelInput}
+            onEditLine={handleEditLine}
             history={commandHistory}
             transitCount={session.transitPackages.length}
           />
