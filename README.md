@@ -84,6 +84,7 @@ The CLI launches a full terminal UI:
 
 - Dark color theme with forced dark background — ensures consistent rendering regardless of terminal theme (local, Docker, SSH)
 - ↑/↓ arrow keys to navigate command history
+- Multi-line input with Shift+Enter for new lines and smart Enter (auto-adds line when more packages expected)
 - Multi-line paste support with preview and confirmation
 - API-first calculation with local fallback
 - Transit package tracking across calculations
@@ -97,6 +98,7 @@ The CLI launches a full terminal UI:
 | `clear` | Clear screen and show welcome |
 | `help` | Show available commands |
 | `exit` / `quit` | Exit the application |
+| `Shift+Enter` | Add new line (multi-line input) |
 | `↑` / `↓` | Navigate command history |
 | `←` / `→` | Move cursor within input |
 | `Ctrl+C` | Cancel current input |
