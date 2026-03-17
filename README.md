@@ -82,7 +82,7 @@ You should see all **124 tests** pass across **11 test suites**.
 
 The CLI launches a full terminal UI:
 
-- Dark color theme — optimized for dark backgrounds for consistent rendering across all environments (local, Docker, SSH)
+- Dark color theme with forced dark background — ensures consistent rendering regardless of terminal theme (local, Docker, SSH)
 - ↑/↓ arrow keys to navigate command history
 - Multi-line paste support with preview and confirmation
 - API-first calculation with local fallback
@@ -120,14 +120,14 @@ vehicleCount maxSpeed maxWeight
 
 ### Error Handling
 
-Errors are validated **line by line** — the CLI shows errors for only the first problematic line, so you can fix one thing at a time:
+Errors are collected across **all input lines** — the CLI shows every error at once so you can fix everything in a single pass:
 
-1. **Header line** is checked first — if invalid, only header errors are shown
-2. **Package lines** are checked in order — if a line has errors, all field errors on that line are shown but later lines are not checked yet
-3. **Vehicle line** (time mode) is checked after all package lines pass
-4. **Cross-package checks** (duplicate IDs, sequential ordering, count mismatch) run last
+1. **Header line** errors (invalid base cost, package count) are collected
+2. **Package lines** are all validated — field errors from every line are shown together
+3. **Vehicle line** (time mode) errors are included alongside package errors
+4. **Cross-package checks** (duplicate IDs, sequential ordering, count mismatch) run after all lines pass individually
 
-For example, if line 2 has an invalid offer code and line 3 has an invalid weight, you'll see only the line 2 error first. After fixing it and re-submitting, line 3's error will appear.
+For example, if line 2 has an invalid offer code and line 3 has an invalid weight, both errors are shown at once.
 
 **Incomplete input** is also handled gracefully — entering a partial header (e.g., just `100` without a package count) shows a specific message explaining what's missing.
 
