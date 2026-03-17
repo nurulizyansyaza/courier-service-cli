@@ -156,14 +156,28 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     if (handleCommand(trimmed)) return;
 
     const parts = trimmed.split(/\s+/);
+
+    if (parts.length >= 1) {
+      const baseCostStr = parts[0];
+      if (!/^\d+(\.\d+)?$/.test(baseCostStr) || Number(baseCostStr) <= 0) {
+        addHistory({ type: 'error', content: `Base delivery cost "${baseCostStr}" must be a positive number` });
+        return;
+      }
+    }
+
     if (parts.length < 2) {
-      addHistory({ type: 'error', content: 'Header line requires: base_delivery_cost no_of_packages' });
+      addHistory({ type: 'error', content: 'Incomplete header: expected base_delivery_cost no_of_packages (e.g. 100 3)' });
+      return;
+    }
+
+    if (parts.length > 2) {
+      addHistory({ type: 'error', content: `Header must have exactly 2 values (base_delivery_cost no_of_packages) but found ${parts.length}` });
       return;
     }
 
     const packageCount = parseInt(parts[1], 10);
-    if (isNaN(packageCount) || packageCount <= 0) {
-      addHistory({ type: 'error', content: 'Invalid package count in header' });
+    if (!/^\d+$/.test(parts[1]) || isNaN(packageCount) || packageCount < 1) {
+      addHistory({ type: 'error', content: `Package count "${parts[1]}" must be a whole number greater than 0` });
       return;
     }
 

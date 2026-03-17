@@ -118,6 +118,19 @@ pkgId weight distance offerCode
 vehicleCount maxSpeed maxWeight
 ```
 
+### Error Handling
+
+Errors are validated **line by line** — the CLI shows errors for only the first problematic line, so you can fix one thing at a time:
+
+1. **Header line** is checked first — if invalid, only header errors are shown
+2. **Package lines** are checked in order — if a line has errors, all field errors on that line are shown but later lines are not checked yet
+3. **Vehicle line** (time mode) is checked after all package lines pass
+4. **Cross-package checks** (duplicate IDs, sequential ordering, count mismatch) run last
+
+For example, if line 2 has an invalid offer code and line 3 has an invalid weight, you'll see only the line 2 error first. After fixing it and re-submitting, line 3's error will appear.
+
+**Incomplete input** is also handled gracefully — entering a partial header (e.g., just `100` without a package count) shows a specific message explaining what's missing.
+
 ### Example
 
 ```
