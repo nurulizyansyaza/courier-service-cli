@@ -27,16 +27,16 @@ const darkColors: ColorPalette = {
 };
 
 const lightColors: ColorPalette = {
-  pink: '#be185d',
-  pinkBright: '#9d174d',
-  emerald: '#047857',
-  red: '#b91c1c',
-  cyan: '#0e7490',
-  amber: '#b45309',
-  muted: '#374151',
-  white: '#111827',
-  dimWhite: '#1f2937',
-  purple: '#6d28d9',
+  pink: '#9d174d',
+  pinkBright: '#831843',
+  emerald: '#065f46',
+  red: '#991b1b',
+  cyan: '#155e75',
+  amber: '#92400e',
+  muted: '#1f2937',
+  white: '#030712',
+  dimWhite: '#111827',
+  purple: '#5b21b6',
 };
 
 export function detectColorScheme(): 'light' | 'dark' {
