@@ -11,6 +11,7 @@ export const HelpScreen: React.FC = () => (
     <Text>  <Text color={colors.red}>exit</Text> <Text color={colors.muted}>- Exit the CLI</Text></Text>
     <Text>  <Text color={colors.muted}>↑ / ↓</Text> <Text color={colors.muted}>- Navigate command history</Text></Text>
     <Text>  <Text color={colors.muted}>← / →</Text> <Text color={colors.muted}>- Move cursor within input lines</Text></Text>
+    <Text>  <Text color={colors.muted}>Shift+Enter</Text> <Text color={colors.muted}>- Add new line (multi-line input)</Text></Text>
     <Text>  <Text color={colors.muted}>Ctrl+C</Text> <Text color={colors.muted}>- Cancel current input</Text></Text>
   </Box>
 );

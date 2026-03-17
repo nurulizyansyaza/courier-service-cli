@@ -171,7 +171,7 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
 
       <Box marginTop={1}>
         <Text color={colors.muted}>
-          Enter to submit • ←/→ move cursor • ↑/↓ {isCollecting ? 'edit lines' : 'history'} • Ctrl+C cancel
+          Shift+Enter new line • Enter submit • ↑/↓ {isCollecting ? 'edit lines' : 'history'} • Ctrl+C cancel
         </Text>
       </Box>
     </Box>
