@@ -10,22 +10,7 @@ program
   .description('Launch interactive TUI mode')
   .option('--api-url <url>', 'API server URL', 'http://localhost:3000')
   .option('--local', 'Use local calculations only (no API)')
-  .option('--theme <scheme>', 'Color scheme: light or dark (auto-detected by default)')
   .action(async (opts) => {
-    if (opts.theme) {
-      process.env['COURIER_THEME'] = opts.theme;
-    }
-
-    // Auto-detect terminal background if no explicit theme set
-    const envTheme = process.env['COURIER_THEME']?.trim();
-    if (!envTheme) {
-      const { queryTerminalBackground } = await import('./ui/theme');
-      const detected = await queryTerminalBackground(200);
-      if (detected) {
-        process.env['COURIER_THEME'] = detected;
-      }
-    }
-
     const [React, { render }, { App }] = await Promise.all([
       import('react'),
       import('ink'),

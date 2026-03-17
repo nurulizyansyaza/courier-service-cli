@@ -48,13 +48,6 @@ node bin/courier-service
 
 # Custom API URL
 node bin/courier-service --api-url http://localhost:4000
-
-# Force light or dark color scheme (auto-detected by default)
-node bin/courier-service --theme light
-node bin/courier-service --theme dark
-
-# Or use the COURIER_THEME environment variable
-COURIER_THEME=light node bin/courier-service
 ```
 
 ### Running with the API server
@@ -83,14 +76,13 @@ The CLI will connect to the API automatically. If the API is unreachable, it fal
 npm test
 ```
 
-You should see all **133 tests** pass across **11 test suites**.
+You should see all **124 tests** pass across **11 test suites**.
 
 ## Usage
 
 The CLI launches a full terminal UI:
 
-- Adaptive color theme — auto-detects light/dark terminal background, live-switches when you change terminal theme (works in Docker too)
-- Override with `--theme light|dark` flag or `COURIER_THEME` env var
+- Dark color theme — optimized for dark backgrounds for consistent rendering across all environments (local, Docker, SSH)
 - ↑/↓ arrow keys to navigate command history
 - Multi-line paste support with preview and confirmation
 - API-first calculation with local fallback
@@ -157,7 +149,7 @@ pkg3 100 200 ofr002
 npm test
 ```
 
-You should see all **133 tests** pass across **11 test suites**:
+You should see all **124 tests** pass across **11 test suites**:
 
 | Suite | Tests | Description |
 |-------|-------|-------------|
@@ -171,7 +163,7 @@ You should see all **133 tests** pass across **11 test suites**:
 | `inputHandlers.test.ts` | 27 | Input handlers — keyboard navigation, paste, editing |
 | `useInputCollector.test.ts` | 10 | Input collector — collecting, paste, edit line logic |
 | `calculation.integration.test.ts` | 12 | Integration — end-to-end cost/time calculations |
-| `theme.test.ts` | 13 | Color scheme — detection, light/dark palettes, runtime switching |
+| `theme.test.ts` | 4 | Color scheme — dark palette, theme formatters |
 
 ## Project Structure
 
@@ -197,7 +189,7 @@ src/
     WelcomeScreen.tsx       # ASCII art, offers table, input format guide
     HelpScreen.tsx          # Available commands display
     ErrorDisplay.tsx        # Error message display
-    theme.ts                # Adaptive color palettes — auto-detects and live-switches light/dark
+    theme.ts                # Dark color palette — fixed dark theme for consistent rendering
 bin/
   courier-service           # Executable entry point
 __tests__/
