@@ -165,6 +165,21 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     }
 
     if (trimmed.includes('\n')) {
+      const lines = trimmed.split('\n').map(l => l.trim()).filter(l => l);
+      const headerParts = lines[0].split(/\s+/);
+      const pkgCount = parseInt(headerParts[1], 10);
+      if (!isNaN(pkgCount) && pkgCount > 0) {
+        const mode = sessionRef.current.mode;
+        const expectedTotal = mode === 'cost' ? pkgCount + 1 : pkgCount + 2;
+        if (lines.length < expectedTotal) {
+          // Not enough lines — enter collecting mode with what we have
+          collector.startCollecting(lines[0], pkgCount);
+          for (let i = 1; i < lines.length; i++) {
+            handleCollectedLine(lines[i]);
+          }
+          return;
+        }
+      }
       addToCommandHistory(trimmed);
       executeCalculation(trimmed);
       return;
