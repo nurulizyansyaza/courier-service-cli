@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Box, Text } from 'ink';
 import { colors } from './theme';
 import { WelcomeScreen } from './WelcomeScreen';
@@ -21,7 +21,7 @@ interface HistoryRendererProps {
   mode: 'cost' | 'time';
 }
 
-const HistoryEntry: React.FC<{ item: HistoryItem; mode: 'cost' | 'time' }> = ({ item, mode }) => {
+const HistoryEntry: React.FC<{ item: HistoryItem; mode: 'cost' | 'time' }> = memo(({ item, mode }) => {
   switch (item.type) {
     case 'welcome':
       return <WelcomeScreen mode={mode} />;
@@ -66,12 +66,12 @@ const HistoryEntry: React.FC<{ item: HistoryItem; mode: 'cost' | 'time' }> = ({ 
     default:
       return null;
   }
-};
+});
 
-export const HistoryRenderer: React.FC<HistoryRendererProps> = ({ history, mode }) => (
+export const HistoryRenderer: React.FC<HistoryRendererProps> = memo(({ history, mode }) => (
   <>
     {history.map((item, i) => (
       <HistoryEntry key={i} item={item} mode={mode} />
     ))}
   </>
-);
+));

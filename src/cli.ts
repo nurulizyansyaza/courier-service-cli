@@ -20,7 +20,7 @@ program
     const envTheme = process.env['COURIER_THEME']?.trim();
     if (!envTheme) {
       const { queryTerminalBackground } = await import('./ui/theme');
-      const detected = await queryTerminalBackground();
+      const detected = await queryTerminalBackground(200);
       if (detected) {
         process.env['COURIER_THEME'] = detected;
       }
