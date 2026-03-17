@@ -5,45 +5,78 @@ Interactive terminal UI for the **Courier Service** delivery cost and time calcu
 ## Setup
 
 ### Prerequisites
-- **Node.js** ≥ 18
-- **courier-service-core** must be built first (local dependency)
 
-### Install & Build
+- **Node.js** 18 or 20 — check with `node --version`
+- **npm** — check with `npm --version`
+- **courier-service-core** must be built first (see below)
+
+### Step 1 — Build the core library first
+
+The CLI depends on the core library. If you haven't built it yet:
 
 ```bash
-# 1. Build the core library first
 cd courier-service-core
-npm install && npm run build
-
-# 2. Build and install the CLI
-cd ../courier-service-cli
-npm install && npm run build
+npm install
+npm run build
+cd ..
 ```
 
-### Run
+### Step 2 — Install dependencies
 
 ```bash
-# Local-only mode (no API needed)
+cd courier-service-cli
+npm install
+```
+
+### Step 3 — Run the CLI
+
+```bash
+# Easiest way — local mode (no API needed)
+npm start
+```
+
+This opens an interactive terminal UI. Type your input line by line, then press Enter to calculate.
+
+### Other ways to run
+
+```bash
+# Local-only mode (no API dependency)
 node bin/courier-service --local
 
-# With API (start API server first in another terminal)
+# With API (start the API server first in another terminal)
 node bin/courier-service
 
 # Custom API URL
 node bin/courier-service --api-url http://localhost:4000
 ```
 
-### Run with API Server
+### Running with the API server
+
+If you want the CLI to connect to the API, you need **two terminals**:
+
+**Terminal 1** — Start the API:
 
 ```bash
-# Terminal 1: Start the API server
 cd courier-service-api
-npm install && npm run build && npm start
+npm run dev
+```
 
-# Terminal 2: Launch CLI (connects to API automatically)
+**Terminal 2** — Start the CLI:
+
+```bash
 cd courier-service-cli
 node bin/courier-service
 ```
+
+The CLI will connect to the API automatically. If the API is unreachable, it falls back to local calculations.
+
+### Step 4 — Run the tests
+
+```bash
+npm test
+```
+
+You should see all **113 tests** pass across **10 test suites**.
 
 ## Usage
 
@@ -100,6 +133,8 @@ pkg3 100 200 ofr002
 ```bash
 npm test
 ```
+
+You should see all **113 tests** pass across **10 test suites**:
 
 | Suite | Tests | Description |
 |-------|-------|-------------|
