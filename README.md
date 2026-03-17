@@ -101,17 +101,18 @@ pkg3 100 200 ofr002
 npm test
 ```
 
-**65 tests** across 7 test suites:
-
 | Suite | Tests | Description |
 |-------|-------|-------------|
-| `cliCommands.test.ts` | Command routing | `/change mode`, `clear`, `help`, `exit` |
-| `cliCalculationRunner.test.ts` | Calculation runner | API + local fallback behavior |
-| `cliSession.test.ts` | Session persistence | Load, save, clear session |
-| `resultMapper.test.ts` | Result mapping | Cost/time result → PackageResult |
-| `inputHelpers.test.ts` | Input utilities | Cursor position, paste splitting |
-| `calculation.integration.test.ts` | Integration | End-to-end cost/time calculations |
-| `cliSession.integration.test.ts` | Integration | Session file read/write/clear |
+| `cliCommands.test.ts` | 13 | Command routing — `/change mode`, `clear`, `help`, `exit` |
+| `cliCalculationRunner.test.ts` | 7 | Calculation runner — API + local fallback behavior |
+| `localCalculation.test.ts` | 11 | Local calculation — cost, time, transit modes |
+| `cliSession.test.ts` | 5 | Session persistence — load, save, clear session |
+| `cliSession.integration.test.ts` | 8 | Integration — session file read/write/clear |
+| `resultMapper.test.ts` | 6 | Result mapping — cost/time result → PackageResult |
+| `inputHelpers.test.ts` | 14 | Input utilities — cursor position, paste splitting |
+| `inputHandlers.test.ts` | 27 | Input handlers — keyboard navigation, paste, editing |
+| `useInputCollector.test.ts` | 10 | Input collector — collecting, paste, edit line logic |
+| `calculation.integration.test.ts` | 12 | Integration — end-to-end cost/time calculations |
 
 ## Project Structure
 
@@ -121,12 +122,16 @@ src/
   index.ts                  # Barrel exports
   types.ts                  # Shared types (PackageResult, TransitPackage, etc.)
   cliCommands.ts            # Command routing (/change mode, clear, help, exit)
-  cliCalculationRunner.ts   # API-first + local fallback calculation
+  cliCalculationRunner.ts   # API-first + local fallback orchestration
+  localCalculation.ts       # Local cost/time/transit calculation logic
   cliSession.ts             # File-based session persistence (~/.courier-cli-session.json)
   resultMapper.ts           # PackageResult mapping (cost/time results)
   inputHelpers.ts           # Pure input utilities (cursor, paste, state reset)
   ui/
-    App.tsx                 # Root component — state management, history, input flow
+    App.tsx                 # Root component — history, session, input flow
+    useInputCollector.ts    # Custom hook — multi-line collection and paste state
+    useInputState.ts        # Custom hook — input value, cursor, history, editing state
+    inputHandlers.ts        # Pure keyboard handler functions (arrows, backspace, paste)
     HistoryRenderer.tsx     # Renders history items (welcome, results, errors, info)
     InputPrompt.tsx         # Text input with mode indicator, cursor, history navigation
     ResultCard.tsx          # Per-package result display with cost breakdown
@@ -139,11 +144,14 @@ bin/
 __tests__/
   cliCommands.test.ts
   cliCalculationRunner.test.ts
+  localCalculation.test.ts
   cliSession.test.ts
+  cliSession.integration.test.ts
   resultMapper.test.ts
   inputHelpers.test.ts
+  inputHandlers.test.ts
+  useInputCollector.test.ts
   calculation.integration.test.ts
-  cliSession.integration.test.ts
 ```
 
 ## Architecture
@@ -155,10 +163,14 @@ graph TD
     App --> Prompt["InputPrompt.tsx"]
     App --> Commands["cliCommands.ts"]
     App --> Runner["cliCalculationRunner.ts"]
+    App --> Collector["useInputCollector.ts"]
+    Prompt --> InputState["useInputState.ts"]
+    Prompt --> Handlers["inputHandlers.ts"]
     Runner -->|"API first"| API["API Server"]
-    Runner -->|"local fallback"| Core["courier-service-core"]
+    Runner -->|"local fallback"| Local["localCalculation.ts"]
+    Local --> Core["courier-service-core"]
     Runner --> Mapper["resultMapper.ts"]
-    Prompt --> Helpers["inputHelpers.ts"]
+    Handlers --> Helpers["inputHelpers.ts"]
     History --> ResultCard["ResultCard.tsx"]
     History --> Welcome["WelcomeScreen.tsx"]
     History --> HelpScreen["HelpScreen.tsx"]

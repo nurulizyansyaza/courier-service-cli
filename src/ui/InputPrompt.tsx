@@ -1,7 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import { Box, Text, useInput } from 'ink';
 import { colors } from './theme';
-import { getCursorLinePosition, splitPastedInput, resetInputState } from '../inputHelpers';
+import { getCursorLinePosition } from '../inputHelpers';
+import { useInputState } from './useInputState';
+import {
+  handleCancel,
+  handleReturn,
+  handleLeftArrow,
+  handleRightArrow,
+  handleUpArrow,
+  handleDownArrow,
+  handleTextInput,
+  handleBackspace,
+  type InputHandlerDeps,
+} from './inputHandlers';
 
 interface InputPromptProps {
   mode: 'cost' | 'time';
@@ -17,12 +29,6 @@ interface InputPromptProps {
   transitCount: number;
 }
 
-// Helpers that update both state and ref atomically
-function syncSet<T>(setter: React.Dispatch<React.SetStateAction<T>>, ref: React.MutableRefObject<T>, val: T) {
-  setter(val);
-  ref.current = val;
-}
-
 export const InputPrompt: React.FC<InputPromptProps> = ({
   mode,
   isCollecting,
@@ -36,22 +42,8 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   history,
   transitCount,
 }) => {
-  const [value, setValue] = useState('');
-  const [cursorPos, setCursorPos] = useState(0);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-  const [draft, setDraft] = useState('');
-  const [editingLineIndex, setEditingLineIndex] = useState(-1);
+  const state = useInputState();
 
-  const valueRef = useRef(value);
-  valueRef.current = value;
-  const cursorPosRef = useRef(cursorPos);
-  cursorPosRef.current = cursorPos;
-  const historyIndexRef = useRef(historyIndex);
-  historyIndexRef.current = historyIndex;
-  const draftRef = useRef(draft);
-  draftRef.current = draft;
-  const editingLineIndexRef = useRef(editingLineIndex);
-  editingLineIndexRef.current = editingLineIndex;
   const onSubmitRef = useRef(onSubmit);
   onSubmitRef.current = onSubmit;
   const onCancelRef = useRef(onCancel);
@@ -67,230 +59,55 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
   const collectedLinesRef = useRef(collectedLines);
   collectedLinesRef.current = collectedLines;
 
-  const resetState = () => {
-    const s = resetInputState();
-    syncSet(setValue, valueRef, s.value);
-    syncSet(setCursorPos, cursorPosRef, s.cursorPos);
-    syncSet(setHistoryIndex, historyIndexRef, s.historyIndex);
-    syncSet(setDraft, draftRef, s.draft);
-    syncSet(setEditingLineIndex, editingLineIndexRef, s.editingLineIndex);
-  };
-
-  const setValueAndCursor = (val: string, pos: number) => {
-    syncSet(setValue, valueRef, val);
-    syncSet(setCursorPos, cursorPosRef, pos);
-  };
-
-  const navigateToCollectedLine = (idx: number) => {
-    const lineVal = collectedLinesRef.current[idx];
-    syncSet(setEditingLineIndex, editingLineIndexRef, idx);
-    setValueAndCursor(lineVal, lineVal.length);
-  };
-
-  const saveDraftAndNavigate = (currentValue: string, idx: number) => {
-    syncSet(setDraft, draftRef, currentValue);
-    navigateToCollectedLine(idx);
-  };
-
-  const commitEditAndNavigate = (currentValue: string, currentIdx: number, nextIdx: number) => {
-    if (currentValue !== collectedLinesRef.current[currentIdx] && onEditLineRef.current) {
-      onEditLineRef.current(currentIdx, currentValue);
-    }
-    navigateToCollectedLine(nextIdx);
-  };
-
-  const returnToDraft = () => {
-    const d = draftRef.current;
-    syncSet(setEditingLineIndex, editingLineIndexRef, -1);
-    setValueAndCursor(d, d.length);
-  };
-
-  const handleCancel = () => {
-    resetState();
-    onCancelRef.current();
-  };
-
-  const handleReturn = (currentValue: string, currentEditingIndex: number) => {
-    if (currentEditingIndex >= 0 && onEditLineRef.current) {
-      onEditLineRef.current(currentEditingIndex, currentValue);
-      syncSet(setEditingLineIndex, editingLineIndexRef, -1);
-    } else {
-      onSubmitRef.current(currentValue);
-    }
-    syncSet(setValue, valueRef, '');
-    syncSet(setCursorPos, cursorPosRef, 0);
-    syncSet(setHistoryIndex, historyIndexRef, -1);
-    syncSet(setDraft, draftRef, '');
-  };
-
-  const handleLeftArrow = (
-    currentValue: string, cursor: number, currentEditingIndex: number, collecting: boolean, collected: string[]
-  ) => {
-    if (collecting && cursor === 0 && collected.length > 0) {
-      if (currentEditingIndex === -1) {
-        saveDraftAndNavigate(currentValue, collected.length - 1);
-      } else if (currentEditingIndex > 0) {
-        commitEditAndNavigate(currentValue, currentEditingIndex, currentEditingIndex - 1);
-      }
-      return;
-    }
-    syncSet(setCursorPos, cursorPosRef, Math.max(0, cursor - 1));
-  };
-
-  const handleRightArrow = (
-    currentValue: string, cursor: number, currentEditingIndex: number, collecting: boolean, collected: string[]
-  ) => {
-    if (collecting && currentEditingIndex >= 0 && cursor >= currentValue.length) {
-      if (currentValue !== collected[currentEditingIndex] && onEditLineRef.current) {
-        onEditLineRef.current(currentEditingIndex, currentValue);
-      }
-      if (currentEditingIndex < collected.length - 1) {
-        navigateToCollectedLine(currentEditingIndex + 1);
-        syncSet(setCursorPos, cursorPosRef, 0);
-      } else {
-        returnToDraft();
-        syncSet(setCursorPos, cursorPosRef, 0);
-      }
-      return;
-    }
-    syncSet(setCursorPos, cursorPosRef, Math.min(currentValue.length, cursor + 1));
-  };
-
-  const handleUpArrow = (
-    currentValue: string, cursor: number, currentEditingIndex: number,
-    collecting: boolean, collected: string[],
-    currentHistoryIndex: number, currentHistory: string[]
-  ) => {
-    if (collecting && collected.length > 0) {
-      if (currentEditingIndex === -1) {
-        saveDraftAndNavigate(currentValue, collected.length - 1);
-      } else if (currentEditingIndex > 0) {
-        commitEditAndNavigate(currentValue, currentEditingIndex, currentEditingIndex - 1);
-      }
-      return;
-    }
-    // Multiline text navigation
-    if (currentValue.includes('\n')) {
-      const { lineIndex, colInLine } = getCursorLinePosition(currentValue, cursor);
-      if (lineIndex > 0) {
-        const lines = currentValue.split('\n');
-        const prevLine = lines[lineIndex - 1];
-        const newCol = Math.min(colInLine, prevLine.length);
-        let newPos = 0;
-        for (let i = 0; i < lineIndex - 1; i++) newPos += lines[i].length + 1;
-        newPos += newCol;
-        syncSet(setCursorPos, cursorPosRef, newPos);
-        return;
-      }
-    }
-    // Command history navigation
-    if (currentHistory.length > 0) {
-      const newIndex = currentHistoryIndex === -1
-        ? currentHistory.length - 1
-        : Math.max(0, currentHistoryIndex - 1);
-      if (currentHistoryIndex === -1) {
-        syncSet(setDraft, draftRef, currentValue);
-      }
-      syncSet(setHistoryIndex, historyIndexRef, newIndex);
-      const histVal = currentHistory[newIndex];
-      setValueAndCursor(histVal, histVal.length);
-    }
-  };
-
-  const handleDownArrow = (
-    currentValue: string, cursor: number, currentEditingIndex: number,
-    collecting: boolean, collected: string[],
-    currentHistoryIndex: number, currentHistory: string[]
-  ) => {
-    if (collecting && currentEditingIndex >= 0) {
-      if (currentValue !== collected[currentEditingIndex] && onEditLineRef.current) {
-        onEditLineRef.current(currentEditingIndex, currentValue);
-      }
-      if (currentEditingIndex >= collected.length - 1) {
-        returnToDraft();
-      } else {
-        navigateToCollectedLine(currentEditingIndex + 1);
-      }
-      return;
-    }
-    // Multiline text navigation
-    if (currentValue.includes('\n')) {
-      const lines = currentValue.split('\n');
-      const { lineIndex, colInLine } = getCursorLinePosition(currentValue, cursor);
-      if (lineIndex < lines.length - 1) {
-        const nextLine = lines[lineIndex + 1];
-        const newCol = Math.min(colInLine, nextLine.length);
-        let newPos = 0;
-        for (let i = 0; i <= lineIndex; i++) newPos += lines[i].length + 1;
-        newPos += newCol;
-        syncSet(setCursorPos, cursorPosRef, newPos);
-        return;
-      }
-    }
-    // Command history navigation
-    if (currentHistoryIndex !== -1) {
-      const newIndex = currentHistoryIndex + 1;
-      if (newIndex >= currentHistory.length) {
-        syncSet(setHistoryIndex, historyIndexRef, -1);
-        const d = draftRef.current;
-        setValueAndCursor(d, d.length);
-      } else {
-        syncSet(setHistoryIndex, historyIndexRef, newIndex);
-        const histVal = currentHistory[newIndex];
-        setValueAndCursor(histVal, histVal.length);
-      }
-    }
-  };
-
-  const handleTextInput = (input: string, currentValue: string, cursor: number) => {
-    // Detect pasted multiline input
-    if (input.includes('\r') || input.includes('\n')) {
-      const lines = splitPastedInput(input, currentValue);
-      if (lines.length > 0 && onPasteRef.current) {
-        onPasteRef.current(lines);
-        resetState();
-        return;
-      }
-    }
-    const newVal = currentValue.slice(0, cursor) + input + currentValue.slice(cursor);
-    setValueAndCursor(newVal, cursor + input.length);
+  const deps: InputHandlerDeps = {
+    valueRef: state.valueRef,
+    cursorPosRef: state.cursorPosRef,
+    historyIndexRef: state.historyIndexRef,
+    draftRef: state.draftRef,
+    editingLineIndexRef: state.editingLineIndexRef,
+    isCollectingRef,
+    collectedLinesRef,
+    historyRef,
+    onSubmitRef,
+    onCancelRef,
+    onEditLineRef,
+    onPasteRef,
+    setValueAndCursor: state.setValueAndCursor,
+    setCursorPos: state.setCursorPos,
+    setHistoryIndex: state.setHistoryIndex,
+    setDraft: state.setDraft,
+    setEditingLineIndex: state.setEditingLineIndex,
+    resetState: state.resetState,
   };
 
   useInput((input, key) => {
-    const currentValue = valueRef.current;
-    const cursor = cursorPosRef.current;
-    const currentHistoryIndex = historyIndexRef.current;
-    const currentEditingIndex = editingLineIndexRef.current;
+    const currentValue = state.valueRef.current;
+    const cursor = state.cursorPosRef.current;
+    const currentHistoryIndex = state.historyIndexRef.current;
+    const currentEditingIndex = state.editingLineIndexRef.current;
     const collecting = isCollectingRef.current;
     const collected = collectedLinesRef.current;
     const currentHistory = historyRef.current;
 
-    if (key.ctrl && input === 'c') { handleCancel(); return; }
-    if (key.return) { handleReturn(currentValue, currentEditingIndex); return; }
-    if (key.leftArrow) { handleLeftArrow(currentValue, cursor, currentEditingIndex, collecting, collected); return; }
-    if (key.rightArrow) { handleRightArrow(currentValue, cursor, currentEditingIndex, collecting, collected); return; }
-    if (key.upArrow) { handleUpArrow(currentValue, cursor, currentEditingIndex, collecting, collected, currentHistoryIndex, currentHistory); return; }
-    if (key.downArrow) { handleDownArrow(currentValue, cursor, currentEditingIndex, collecting, collected, currentHistoryIndex, currentHistory); return; }
+    if (key.ctrl && input === 'c') { handleCancel(deps); return; }
+    if (key.return) { handleReturn(deps, currentValue, currentEditingIndex); return; }
+    if (key.leftArrow) { handleLeftArrow(deps, currentValue, cursor, currentEditingIndex, collecting, collected); return; }
+    if (key.rightArrow) { handleRightArrow(deps, currentValue, cursor, currentEditingIndex, collecting, collected); return; }
+    if (key.upArrow) { handleUpArrow(deps, currentValue, cursor, currentEditingIndex, collecting, collected, currentHistoryIndex, currentHistory); return; }
+    if (key.downArrow) { handleDownArrow(deps, currentValue, cursor, currentEditingIndex, collecting, collected, currentHistoryIndex, currentHistory); return; }
 
-    if (key.backspace || key.delete) {
-      if (cursor > 0) {
-        const newVal = currentValue.slice(0, cursor - 1) + currentValue.slice(cursor);
-        setValueAndCursor(newVal, cursor - 1);
-      }
-      return;
-    }
-
-    if (key.escape) { resetState(); return; }
+    if (key.backspace || key.delete) { handleBackspace(deps, currentValue, cursor); return; }
+    if (key.escape) { state.resetState(); return; }
     if (key.ctrl || key.meta || key.tab) return;
 
-    if (input) { handleTextInput(input, currentValue, cursor); }
+    if (input) { handleTextInput(deps, input, currentValue, cursor); }
   });
 
   const modeColor = mode === 'cost' ? colors.pink : colors.cyan;
   const modeLabel = mode === 'cost' ? 'Cost' : 'Time';
 
-  const allLines = value.split('\n');
-  const { lineIndex: cursorLineIndex, colInLine: cursorPosInLine } = getCursorLinePosition(value, cursorPos);
+  const allLines = state.value.split('\n');
+  const { lineIndex: cursorLineIndex, colInLine: cursorPosInLine } = getCursorLinePosition(state.value, state.cursorPos);
 
   return (
     <Box flexDirection="column">
@@ -313,12 +130,12 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
 
       {isCollecting && collectedLines.map((line, i) => (
         <Box key={i}>
-          {i === editingLineIndex ? (
+          {i === state.editingLineIndex ? (
             <>
               <Text color={colors.pink}>{'❯ '}</Text>
-              <Text>{value.slice(0, cursorPosInLine)}</Text>
-              <Text inverse>{cursorPosInLine < value.length ? value[cursorPosInLine] : ' '}</Text>
-              <Text>{value.slice(cursorPosInLine + 1)}</Text>
+              <Text>{state.value.slice(0, cursorPosInLine)}</Text>
+              <Text inverse>{cursorPosInLine < state.value.length ? state.value[cursorPosInLine] : ' '}</Text>
+              <Text>{state.value.slice(cursorPosInLine + 1)}</Text>
             </>
           ) : (
             <Text color={colors.dimWhite}>
@@ -343,12 +160,12 @@ export const InputPrompt: React.FC<InputPromptProps> = ({
         </Box>
       ))}
 
-      {((isCollecting && editingLineIndex === -1) || (!isCollecting && allLines.length === 1)) && (
+      {((isCollecting && state.editingLineIndex === -1) || (!isCollecting && allLines.length === 1)) && (
         <Box>
           <Text color={colors.pink}>{'❯ '}</Text>
-          <Text>{value.slice(0, cursorPosInLine)}</Text>
-          <Text inverse>{cursorPosInLine < value.length ? value[cursorPosInLine] : ' '}</Text>
-          <Text>{value.slice(cursorPosInLine + 1)}</Text>
+          <Text>{state.value.slice(0, cursorPosInLine)}</Text>
+          <Text inverse>{cursorPosInLine < state.value.length ? state.value[cursorPosInLine] : ' '}</Text>
+          <Text>{state.value.slice(cursorPosInLine + 1)}</Text>
         </Box>
       )}
 

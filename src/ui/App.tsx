@@ -6,6 +6,7 @@ import { InputPrompt } from './InputPrompt';
 import { processCommand } from '../cliCommands';
 import { runCalculation } from '../cliCalculationRunner';
 import { loadSession, saveSession, type SessionData } from '../cliSession';
+import { useInputCollector } from './useInputCollector';
 
 interface AppProps {
   initialApiUrl?: string;
@@ -24,25 +25,14 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
 
   const [history, setHistory] = useState<HistoryItem[]>([{ type: 'welcome' }]);
   const [commandHistory, setCommandHistory] = useState<string[]>(session.commandHistory);
-
-  const [isCollecting, setIsCollecting] = useState(false);
-  const [collectedLines, setCollectedLines] = useState<string[]>([]);
-  const [expectedPackageCount, setExpectedPackageCount] = useState<number | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
-  const [pastedLines, setPastedLines] = useState<string[]>([]);
+
+  const collector = useInputCollector();
 
   const sessionRef = useRef(session);
   sessionRef.current = session;
   const commandHistoryRef = useRef(commandHistory);
   commandHistoryRef.current = commandHistory;
-  const isCollectingRef = useRef(isCollecting);
-  isCollectingRef.current = isCollecting;
-  const collectedLinesRef = useRef(collectedLines);
-  collectedLinesRef.current = collectedLines;
-  const expectedPackageCountRef = useRef(expectedPackageCount);
-  expectedPackageCountRef.current = expectedPackageCount;
-  const pastedLinesRef = useRef(pastedLines);
-  pastedLinesRef.current = pastedLines;
 
   useEffect(() => {
     saveSession({ ...session, commandHistory });
@@ -82,79 +72,40 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     setIsCalculating(false);
   }, [addHistory]);
 
-  const clearPastedLines = useCallback(() => {
-    setPastedLines([]);
-    pastedLinesRef.current = [];
-  }, []);
-
-  const resetCollecting = useCallback(() => {
-    setIsCollecting(false);
-    isCollectingRef.current = false;
-    setCollectedLines([]);
-    collectedLinesRef.current = [];
-    setExpectedPackageCount(null);
-    expectedPackageCountRef.current = null;
-  }, []);
-
   const handleCancelInput = useCallback(() => {
-    if (pastedLinesRef.current.length > 0) {
-      clearPastedLines();
+    if (collector.pastedLinesRef.current.length > 0) {
+      collector.clearPastedLines();
       addHistory({ type: 'info', content: 'Input cancelled' });
       return;
     }
-    if (isCollectingRef.current) {
-      resetCollecting();
+    if (collector.isCollectingRef.current) {
+      collector.resetCollecting();
       addHistory({ type: 'info', content: 'Input cancelled' });
     }
-  }, [addHistory, clearPastedLines, resetCollecting]);
-
-  const handleEditLine = useCallback((index: number, newValue: string) => {
-    if (pastedLinesRef.current.length > 0) {
-      setPastedLines(prev => {
-        const updated = [...prev];
-        updated[index] = newValue.trim();
-        return updated;
-      });
-      pastedLinesRef.current = [...pastedLinesRef.current];
-      pastedLinesRef.current[index] = newValue.trim();
-      return;
-    }
-    setCollectedLines(prev => {
-      const updated = [...prev];
-      updated[index] = newValue.trim();
-      return updated;
-    });
-  }, []);
-
-  const handlePaste = useCallback((lines: string[]) => {
-    setPastedLines(lines);
-    pastedLinesRef.current = lines;
-  }, []);
+  }, [addHistory, collector]);
 
   const handlePastedSubmit = useCallback(() => {
-    const lines = pastedLinesRef.current;
-    clearPastedLines();
+    const lines = collector.pastedLinesRef.current;
+    collector.clearPastedLines();
     const fullInput = lines.join('\n');
     addToCommandHistory(fullInput);
     executeCalculation(fullInput);
-  }, [addToCommandHistory, executeCalculation, clearPastedLines]);
+  }, [addToCommandHistory, executeCalculation, collector]);
 
   const handleCollectedLine = useCallback((trimmed: string) => {
-    const newLines = [...collectedLinesRef.current, trimmed];
-    setCollectedLines(newLines);
-    collectedLinesRef.current = newLines;
+    const newLines = collector.addCollectedLine(trimmed);
 
     const mode = sessionRef.current.mode;
-    const pkgCount = expectedPackageCountRef.current!;
+    const pkgCount = collector.expectedPackageCountRef.current!;
     const totalExpected = mode === 'cost' ? pkgCount + 1 : pkgCount + 2;
 
     if (newLines.length >= totalExpected) {
-      resetCollecting();
+      collector.resetCollecting();
       const fullInput = newLines.join('\n');
       addToCommandHistory(fullInput);
       executeCalculation(fullInput);
     }
-  }, [addToCommandHistory, executeCalculation, resetCollecting]);
+  }, [addToCommandHistory, executeCalculation, collector]);
 
   const handleCommand = useCallback((trimmed: string) => {
     const action = processCommand(trimmed);
@@ -181,43 +132,29 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
     return true;
   }, [addHistory, addToCommandHistory, exit]);
 
-  const startCollecting = useCallback((trimmed: string, packageCount: number) => {
-    setCollectedLines([trimmed]);
-    collectedLinesRef.current = [trimmed];
-    setExpectedPackageCount(packageCount);
-    expectedPackageCountRef.current = packageCount;
-    setIsCollecting(true);
-    isCollectingRef.current = true;
-  }, []);
-
   const handleSubmit = useCallback((value: string) => {
     const trimmed = value.trim();
 
-    // Confirm pasted lines
-    if (pastedLinesRef.current.length > 0 && !trimmed) {
+    if (collector.pastedLinesRef.current.length > 0 && !trimmed) {
       handlePastedSubmit();
       return;
     }
 
     if (!trimmed) return;
 
-    // Collecting multi-line input
-    if (isCollectingRef.current) {
+    if (collector.isCollectingRef.current) {
       handleCollectedLine(trimmed);
       return;
     }
 
-    // Multiline from history
     if (trimmed.includes('\n')) {
       addToCommandHistory(trimmed);
       executeCalculation(trimmed);
       return;
     }
 
-    // Commands
     if (handleCommand(trimmed)) return;
 
-    // Parse header and start collecting
     const parts = trimmed.split(/\s+/);
     if (parts.length < 2) {
       addHistory({ type: 'error', content: 'Header line requires: base_delivery_cost no_of_packages' });
@@ -230,14 +167,14 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
       return;
     }
 
-    startCollecting(trimmed, packageCount);
-  }, [addHistory, addToCommandHistory, executeCalculation, handleCommand, handleCollectedLine, handlePastedSubmit, startCollecting]);
+    collector.startCollecting(trimmed, packageCount);
+  }, [addHistory, addToCommandHistory, executeCalculation, handleCommand, handleCollectedLine, handlePastedSubmit, collector]);
 
   const getExpectedTotalLines = () => {
-    if (!expectedPackageCount) return null;
+    if (!collector.expectedPackageCount) return null;
     return session.mode === 'cost'
-      ? expectedPackageCount + 1
-      : expectedPackageCount + 2;
+      ? collector.expectedPackageCount + 1
+      : collector.expectedPackageCount + 2;
   };
 
   return (
@@ -250,14 +187,14 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
         ) : (
           <InputPrompt
             mode={session.mode}
-            isCollecting={isCollecting || pastedLines.length > 0}
-            currentLine={collectedLines.length + 1}
+            isCollecting={collector.isCollecting || collector.pastedLines.length > 0}
+            currentLine={collector.collectedLines.length + 1}
             expectedLines={getExpectedTotalLines()}
-            collectedLines={pastedLines.length > 0 ? pastedLines : collectedLines}
+            collectedLines={collector.pastedLines.length > 0 ? collector.pastedLines : collector.collectedLines}
             onSubmit={handleSubmit}
             onCancel={handleCancelInput}
-            onEditLine={handleEditLine}
-            onPaste={handlePaste}
+            onEditLine={collector.handleEditLine}
+            onPaste={collector.setPastedLines}
             history={commandHistory}
             transitCount={session.transitPackages.length}
           />
