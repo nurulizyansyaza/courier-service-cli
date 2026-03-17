@@ -76,7 +76,7 @@ describe('colors', () => {
   it('uses light palette when COURIER_THEME=light', () => {
     process.env['COURIER_THEME'] = 'light';
     const { colors } = require('../src/ui/theme');
-    expect(colors.muted).toBe('#6b7280');
-    expect(colors.white).toBe('#1f2937');
+    expect(colors.muted).toBe('#374151');
+    expect(colors.white).toBe('#111827');
   });
 });
