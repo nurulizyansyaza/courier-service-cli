@@ -7,9 +7,9 @@ export const colors = {
   red: '#f87171',
   cyan: '#22d3ee',
   amber: '#fbbf24',
-  muted: '#71717a',
+  muted: '#9ca3af',
   white: '#fafafa',
-  dimWhite: '#a1a1aa',
+  dimWhite: '#d4d4d8',
   purple: '#a78bfa',
 } as const;
 
