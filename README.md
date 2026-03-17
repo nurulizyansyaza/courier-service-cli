@@ -48,6 +48,13 @@ node bin/courier-service
 
 # Custom API URL
 node bin/courier-service --api-url http://localhost:4000
+
+# Force light or dark color scheme (auto-detected by default)
+node bin/courier-service --theme light
+node bin/courier-service --theme dark
+
+# Or use the COURIER_THEME environment variable
+COURIER_THEME=light node bin/courier-service
 ```
 
 ### Running with the API server
@@ -188,7 +195,7 @@ src/
     WelcomeScreen.tsx       # ASCII art, offers table, input format guide
     HelpScreen.tsx          # Available commands display
     ErrorDisplay.tsx        # Error message display
-    theme.ts                # Color constants matching frontend
+    theme.ts                # Adaptive color palettes (auto-detects light/dark terminal)
 bin/
   courier-service           # Executable entry point
 __tests__/

@@ -1,7 +1,4 @@
 import { Command } from 'commander';
-import React from 'react';
-import { render } from 'ink';
-import { App } from './ui/App';
 
 const program = new Command()
   .name('courier-service')
@@ -13,7 +10,16 @@ program
   .description('Launch interactive TUI mode')
   .option('--api-url <url>', 'API server URL', 'http://localhost:3000')
   .option('--local', 'Use local calculations only (no API)')
-  .action((opts) => {
+  .option('--theme <scheme>', 'Color scheme: light or dark (auto-detected by default)')
+  .action(async (opts) => {
+    if (opts.theme) {
+      process.env['COURIER_THEME'] = opts.theme;
+    }
+    const [React, { render }, { App }] = await Promise.all([
+      import('react'),
+      import('ink'),
+      import('./ui/App'),
+    ]);
     render(
       React.createElement(App, {
         initialApiUrl: opts.local ? undefined : opts.apiUrl,
