@@ -193,6 +193,14 @@ export function handleTextInput(
   input: string, currentValue: string, cursor: number,
 ) {
   if (input.includes('\r') || input.includes('\n')) {
+    // Single newline character (Shift+Enter) — insert as newline
+    const stripped = input.replace(/\r/g, '\n');
+    if (stripped === '\n') {
+      const newVal = currentValue.slice(0, cursor) + '\n' + currentValue.slice(cursor);
+      deps.setValueAndCursor(newVal, cursor + 1);
+      return;
+    }
+    // Multi-line paste
     const lines = splitPastedInput(input, currentValue);
     if (lines.length > 0 && deps.onPasteRef.current) {
       deps.onPasteRef.current(lines);
