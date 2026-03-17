@@ -16,6 +16,19 @@ interface AppProps {
 export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   const { exit } = useApp();
 
+  // Force dark background on the terminal so colors are always legible
+  useEffect(() => {
+    // ESC ] 11 ; rgb:RR/GG/BB ST — set terminal background (xterm/VTE/iTerm2)
+    process.stdout.write('\x1b]11;rgb:0d/01/18\x07');
+    // Also set via ANSI 24-bit SGR for terminals that support it
+    process.stdout.write('\x1b[48;2;13;1;24m\x1b[J');
+    return () => {
+      // Reset background on exit
+      process.stdout.write('\x1b]111\x07');
+      process.stdout.write('\x1b[49m\x1b[J');
+    };
+  }, []);
+
   const [session, setSession] = useState<SessionData>(() => {
     const loaded = loadSession();
     if (localOnly) loaded.apiUrl = null;
