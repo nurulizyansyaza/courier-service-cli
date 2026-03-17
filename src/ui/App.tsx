@@ -125,6 +125,10 @@ export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
         setSession(prev => ({ ...prev, mode: action.mode }));
         addHistory({ type: 'info', content: `Mode changed to ${action.mode}` });
         break;
+      case 'error':
+        addHistory({ type: 'command', content: trimmed });
+        addHistory({ type: 'error', content: action.message });
+        break;
       case 'exit':
         exit();
         break;

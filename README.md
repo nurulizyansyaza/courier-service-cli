@@ -131,6 +131,8 @@ For example, if line 2 has an invalid offer code and line 3 has an invalid weigh
 
 **Incomplete input** is also handled gracefully — entering a partial header (e.g., just `100` without a package count) shows a specific message explaining what's missing.
 
+**Typo suggestions** — if you mistype a command (e.g., `hlp` instead of `help`, `clera` instead of `clear`), the CLI will suggest the closest matching command instead of treating the input as calculation data.
+
 ### Example
 
 ```

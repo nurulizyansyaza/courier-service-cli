@@ -44,20 +44,62 @@ describe('processCommand', () => {
       expect(processCommand('/change mode time')).toEqual({ type: 'change_mode', mode: 'time' });
     });
 
-    it('returns null for invalid mode', () => {
-      expect(processCommand('/change mode invalid')).toBeNull();
+    it('returns error for invalid mode', () => {
+      const result = processCommand('/change mode invalid');
+      expect(result).toEqual({ type: 'error', message: 'Usage: /change mode cost | time' });
     });
   });
 
-  describe('non-command input', () => {
-    it('returns null for package input', () => {
-      expect(processCommand('100 3')).toBeNull();
-      expect(processCommand('PKG1 5 5 OFR001')).toBeNull();
+  describe('incomplete or unknown slash commands', () => {
+    it('returns error for incomplete /change command', () => {
+      const result = processCommand('/change');
+      expect(result).toEqual({ type: 'error', message: 'Usage: /change mode cost | time' });
     });
 
-    it('returns null for unknown slash commands', () => {
-      expect(processCommand('/connect')).toBeNull();
-      expect(processCommand('/disconnect')).toBeNull();
+    it('returns error for partial /change mode', () => {
+      const result = processCommand('/change mod');
+      expect(result).toEqual({ type: 'error', message: 'Usage: /change mode cost | time' });
+    });
+
+    it('returns error for /change mode without value', () => {
+      const result = processCommand('/change mode');
+      expect(result).toEqual({ type: 'error', message: 'Usage: /change mode cost | time' });
+    });
+
+    it('returns error for unknown slash commands', () => {
+      const result = processCommand('/connect');
+      expect(result).not.toBeNull();
+      expect(result!.type).toBe('error');
+    });
+  });
+
+  describe('typo suggestions', () => {
+    it('suggests "help" for "hlp"', () => {
+      const result = processCommand('hlp');
+      expect(result).toEqual({ type: 'error', message: 'Unknown command "hlp". Did you mean "help"?' });
+    });
+
+    it('suggests "clear" for "clera"', () => {
+      const result = processCommand('clera');
+      expect(result).toEqual({ type: 'error', message: 'Unknown command "clera". Did you mean "clear"?' });
+    });
+
+    it('suggests "exit" for "exti"', () => {
+      const result = processCommand('exti');
+      expect(result).toEqual({ type: 'error', message: 'Unknown command "exti". Did you mean "exit"?' });
+    });
+
+    it('suggests "quit" for "quite"', () => {
+      const result = processCommand('quite');
+      expect(result).toEqual({ type: 'error', message: 'Unknown command "quite". Did you mean "quit"?' });
+    });
+
+    it('does not suggest for unrelated input like "100 3"', () => {
+      expect(processCommand('100 3')).toBeNull();
+    });
+
+    it('does not suggest for package-like input', () => {
+      expect(processCommand('PKG1 5 5 OFR001')).toBeNull();
     });
   });
 
