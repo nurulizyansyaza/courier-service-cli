@@ -83,13 +83,14 @@ The CLI will connect to the API automatically. If the API is unreachable, it fal
 npm test
 ```
 
-You should see all **113 tests** pass across **10 test suites**.
+You should see all **133 tests** pass across **11 test suites**.
 
 ## Usage
 
 The CLI launches a full terminal UI:
 
-- Adaptive color theme — auto-detects light/dark terminal background (works in Docker too)
+- Adaptive color theme — auto-detects light/dark terminal background, live-switches when you change terminal theme (works in Docker too)
+- Override with `--theme light|dark` flag or `COURIER_THEME` env var
 - ↑/↓ arrow keys to navigate command history
 - Multi-line paste support with preview and confirmation
 - API-first calculation with local fallback
@@ -156,7 +157,7 @@ pkg3 100 200 ofr002
 npm test
 ```
 
-You should see all **113 tests** pass across **10 test suites**:
+You should see all **133 tests** pass across **11 test suites**:
 
 | Suite | Tests | Description |
 |-------|-------|-------------|
@@ -170,6 +171,7 @@ You should see all **113 tests** pass across **10 test suites**:
 | `inputHandlers.test.ts` | 27 | Input handlers — keyboard navigation, paste, editing |
 | `useInputCollector.test.ts` | 10 | Input collector — collecting, paste, edit line logic |
 | `calculation.integration.test.ts` | 12 | Integration — end-to-end cost/time calculations |
+| `theme.test.ts` | 13 | Color scheme — detection, light/dark palettes, runtime switching |
 
 ## Project Structure
 
@@ -195,7 +197,7 @@ src/
     WelcomeScreen.tsx       # ASCII art, offers table, input format guide
     HelpScreen.tsx          # Available commands display
     ErrorDisplay.tsx        # Error message display
-    theme.ts                # Adaptive color palettes (auto-detects light/dark terminal)
+    theme.ts                # Adaptive color palettes — auto-detects and live-switches light/dark
 bin/
   courier-service           # Executable entry point
 __tests__/
@@ -209,6 +211,7 @@ __tests__/
   inputHandlers.test.ts
   useInputCollector.test.ts
   calculation.integration.test.ts
+  theme.test.ts
 ```
 
 ## Architecture

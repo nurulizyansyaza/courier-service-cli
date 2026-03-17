@@ -1,12 +1,26 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Box, Text, useApp } from 'ink';
-import { colors } from './theme';
+import { colors, queryTerminalBackground, setColorScheme, getColorScheme } from './theme';
 import { HistoryRenderer, type HistoryItem } from './HistoryRenderer';
 import { InputPrompt } from './InputPrompt';
 import { processCommand } from '../cliCommands';
 import { runCalculation } from '../cliCalculationRunner';
 import { loadSession, saveSession, type SessionData } from '../cliSession';
 import { useInputCollector } from './useInputCollector';
+
+function useThemeWatcher(intervalMs = 2000) {
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      const detected = await queryTerminalBackground(300);
+      if (detected && detected !== getColorScheme()) {
+        setColorScheme(detected);
+        setTick((t) => t + 1);
+      }
+    }, intervalMs);
+    return () => clearInterval(timer);
+  }, [intervalMs]);
+}
 
 interface AppProps {
   initialApiUrl?: string;
@@ -15,6 +29,7 @@ interface AppProps {
 
 export const App: React.FC<AppProps> = ({ initialApiUrl, localOnly }) => {
   const { exit } = useApp();
+  useThemeWatcher();
 
   const [session, setSession] = useState<SessionData>(() => {
     const loaded = loadSession();

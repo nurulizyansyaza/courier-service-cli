@@ -80,3 +80,38 @@ describe('colors', () => {
     expect(colors.white).toBe('#030712');
   });
 });
+
+describe('setColorScheme', () => {
+  beforeEach(() => {
+    jest.resetModules();
+  });
+
+  it('switches colors from dark to light at runtime', () => {
+    const { colors, setColorScheme, getColorScheme } = require('../src/ui/theme');
+    expect(getColorScheme()).toBe('dark');
+    expect(colors.muted).toBe('#9ca3af');
+
+    setColorScheme('light');
+    expect(getColorScheme()).toBe('light');
+    expect(colors.muted).toBe('#1f2937');
+    expect(colors.white).toBe('#030712');
+  });
+
+  it('switches colors from light back to dark at runtime', () => {
+    const { colors, setColorScheme } = require('../src/ui/theme');
+    setColorScheme('light');
+    expect(colors.muted).toBe('#1f2937');
+
+    setColorScheme('dark');
+    expect(colors.muted).toBe('#9ca3af');
+    expect(colors.white).toBe('#fafafa');
+  });
+
+  it('is a no-op when setting same scheme', () => {
+    const { colors, setColorScheme, getColorScheme } = require('../src/ui/theme');
+    const mutedBefore = colors.muted;
+    setColorScheme('dark');
+    expect(colors.muted).toBe(mutedBefore);
+    expect(getColorScheme()).toBe('dark');
+  });
+});
