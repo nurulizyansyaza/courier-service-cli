@@ -89,7 +89,7 @@ You should see all **113 tests** pass across **10 test suites**.
 
 The CLI launches a full terminal UI:
 
-- Color-coded output matching the frontend theme (pink/cyan/emerald)
+- Adaptive color theme — auto-detects light/dark terminal background (works in Docker too)
 - ↑/↓ arrow keys to navigate command history
 - Multi-line paste support with preview and confirmation
 - API-first calculation with local fallback
